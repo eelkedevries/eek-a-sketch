@@ -1,1 +1,1157 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>eek-a-sketch</title>
+  <style>
+    :root {
+      --panel-w: 168px;
+      --bg: #e5e7eb;
+      --panel: rgba(255,255,255,.96);
+      --border: #cbd5e1;
+      --text: #0f172a;
+      --muted: #64748b;
+      --active: #111111;
+      --danger: #dc2626;
+      --radius: 12px;
+      --shadow: 0 12px 24px rgba(0,0,0,.12);
+      --min-btn-h: 34px;
+    }
 
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+      color: var(--text);
+      background: #f1f5f9;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    #app {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+      background: var(--bg);
+    }
+
+    #viewport {
+      position: absolute;
+      inset: 0;
+      overflow: hidden;
+      touch-action: none;
+      background: var(--bg);
+    }
+
+    #canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+      touch-action: none;
+      user-select: none;
+      -webkit-user-select: none;
+      cursor: crosshair;
+    }
+
+    #sidebar {
+      position: absolute;
+      left: 8px;
+      top: 8px;
+      width: var(--panel-w);
+      max-height: calc(100vh - 16px);
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      padding: 6px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--panel);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(8px);
+      z-index: 20;
+      overflow: hidden;
+    }
+
+    .divider {
+      width: 100%;
+      height: 1px;
+      background: var(--border);
+      flex: 0 0 auto;
+    }
+
+    .section {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      flex: 0 0 auto;
+    }
+
+    .section-title {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .grid-2, .grid-3, .grid-5 {
+      display: grid;
+      gap: 4px;
+    }
+    .grid-2 { grid-template-columns: repeat(2, minmax(0,1fr)); }
+    .grid-3 { grid-template-columns: repeat(3, minmax(0,1fr)); }
+    .grid-5 { grid-template-columns: repeat(5, minmax(0,1fr)); }
+
+    .btn, .tool-btn {
+      min-height: var(--min-btn-h);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: #fff;
+      color: var(--text);
+      font: inherit;
+      font-size: 11px;
+      padding: 6px 8px;
+      line-height: 1.2;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+    }
+    .btn:hover, .tool-btn:hover { background: #f8fafc; }
+    .tool-btn.active, .btn.active {
+      background: var(--active);
+      border-color: var(--active);
+      color: #fff;
+    }
+    .btn.danger {
+      background: var(--danger);
+      border-color: #f87171;
+      color: #fff;
+    }
+    .btn:disabled, .tool-btn:disabled {
+      opacity: .45;
+      cursor: not-allowed;
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .field-label {
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--muted);
+    }
+
+    .stepper {
+      display: flex;
+      align-items: stretch;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+      background: #fff;
+    }
+    .stepper input[type="number"] {
+      width: 46px;
+      border: 0;
+      padding: 6px 4px;
+      font-size: 11px;
+      outline: none;
+      background: transparent;
+    }
+    .stepper-side {
+      display: flex;
+      flex-direction: column;
+      border-left: 1px solid var(--border);
+    }
+    .stepper-side button {
+      width: 18px;
+      height: 16px;
+      border: 0;
+      background: #fff;
+      font-size: 9px;
+      cursor: pointer;
+    }
+    .stepper-side button + button { border-top: 1px solid var(--border); }
+
+    .slider-row {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    input[type="range"] { width: 100%; }
+    .slider-value {
+      width: 30px;
+      text-align: right;
+      font-size: 10px;
+      color: var(--muted);
+      flex: 0 0 auto;
+    }
+
+    .swatch {
+      width: 100%;
+      height: 20px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      cursor: pointer;
+      background: #fff;
+    }
+    .swatch.active {
+      border-color: #111;
+      box-shadow: 0 0 0 2px #111 inset;
+    }
+
+    .checkbox-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 11px;
+    }
+
+    #textEditor {
+      position: absolute;
+      z-index: 30;
+      min-width: 120px;
+      min-height: 34px;
+      padding: 6px 8px;
+      border: 1px solid #111;
+      border-radius: 8px;
+      background: rgba(255,255,255,.96);
+      outline: none;
+      resize: both;
+      font: inherit;
+    }
+
+    #confirmOverlay {
+      position: absolute;
+      inset: 0;
+      z-index: 50;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0,0,0,.4);
+      padding: 16px;
+    }
+    #confirmOverlay.show { display: flex; }
+    .dialog {
+      width: min(360px, 100%);
+      background: white;
+      border-radius: 14px;
+      box-shadow: 0 20px 40px rgba(0,0,0,.24);
+      padding: 16px;
+    }
+    .dialog-title { font-weight: 700; }
+    .dialog-text { margin-top: 8px; font-size: 14px; color: #475569; }
+    .dialog-actions {
+      margin-top: 16px;
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+    }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <input id="fileInput" type="file" accept="image/*" hidden />
+    <div id="viewport">
+      <canvas id="canvas"></canvas>
+      <textarea id="textEditor" placeholder="Type here" rows="2" style="display:none"></textarea>
+
+      <div id="sidebar">
+        <div class="section">
+          <div class="grid-2">
+            <button id="undoBtn" class="btn">Undo</button>
+            <button id="redoBtn" class="btn">Redo</button>
+          </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="section">
+          <div class="section-title">TOOLS</div>
+          <div id="toolsGrid" class="grid-2"></div>
+        </div>
+
+        <div class="divider"></div>
+
+        <div id="attributesSection" class="section">
+          <div class="section-title">ATTRIBUTES</div>
+
+          <div id="sizeField" class="field">
+            <div class="field-label">Size</div>
+            <div class="stepper">
+              <input id="sizeInput" type="number" min="1" max="300" />
+              <div class="stepper-side">
+                <button id="sizeUp" type="button">▲</button>
+                <button id="sizeDown" type="button">▼</button>
+              </div>
+            </div>
+          </div>
+
+          <div id="shapeField" class="field">
+            <div class="field-label">Shape</div>
+            <div id="shapeGrid" class="grid-2"></div>
+          </div>
+
+          <div id="alphaField" class="field">
+            <div class="field-label">Alpha</div>
+            <div class="slider-row">
+              <input id="alphaInput" type="range" min="0" max="100" step="1" />
+              <span id="alphaValue" class="slider-value">100</span>
+            </div>
+          </div>
+
+          <div id="strokeField" class="field">
+            <div class="field-label">Stroke</div>
+            <div class="stepper">
+              <input id="strokeInput" type="number" min="0" max="60" />
+              <div class="stepper-side">
+                <button id="strokeUp" type="button">▲</button>
+                <button id="strokeDown" type="button">▼</button>
+              </div>
+            </div>
+          </div>
+
+          <label id="solidField" class="checkbox-row">
+            <input id="solidInput" type="checkbox" />
+            <span>Solid</span>
+          </label>
+
+          <div id="colourField" class="field">
+            <div class="field-label">Colour</div>
+            <div id="colourGrid" class="grid-5"></div>
+          </div>
+
+          <div id="backgroundRgbField" class="grid-3" style="display:none">
+            <label class="field">
+              <div class="field-label">R</div>
+              <div class="stepper">
+                <input id="bgR" type="number" min="0" max="255" />
+                <div class="stepper-side">
+                  <button id="bgRUp" type="button">▲</button>
+                  <button id="bgRDown" type="button">▼</button>
+                </div>
+              </div>
+            </label>
+            <label class="field">
+              <div class="field-label">G</div>
+              <div class="stepper">
+                <input id="bgG" type="number" min="0" max="255" />
+                <div class="stepper-side">
+                  <button id="bgGUp" type="button">▲</button>
+                  <button id="bgGDown" type="button">▼</button>
+                </div>
+              </div>
+            </label>
+            <label class="field">
+              <div class="field-label">B</div>
+              <div class="stepper">
+                <input id="bgB" type="number" min="0" max="255" />
+                <div class="stepper-side">
+                  <button id="bgBUp" type="button">▲</button>
+                  <button id="bgBDown" type="button">▼</button>
+                </div>
+              </div>
+            </label>
+          </div>
+        </div>
+
+        <div style="margin-top:auto"></div>
+        <div class="divider"></div>
+
+        <div class="section">
+          <div class="section-title">ACTIONS</div>
+          <div class="grid-2">
+            <button id="uploadBtn" class="btn">Upload</button>
+            <button id="pasteBtn" class="btn">Paste</button>
+          </div>
+          <div class="grid-3">
+            <button id="saveBtn" class="btn">Save</button>
+            <button id="copyBtn" class="btn">Copy</button>
+            <button id="clearBtn" class="btn danger">Clear</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="confirmOverlay">
+      <div class="dialog">
+        <div class="dialog-title">Are you sure?</div>
+        <div class="dialog-text">This will remove everything currently on the canvas.</div>
+        <div class="dialog-actions">
+          <button id="cancelClearBtn" class="btn">Cancel</button>
+          <button id="confirmClearBtn" class="btn danger">Clear</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const state = {
+      scene: { backgroundColor: "#ffffff", objects: [] },
+      history: [],
+      historyIndex: 0,
+      activeTool: TOOL.BRUSH,
+      selectMode: false,
+      selectedId: null,
+      interaction: null,
+      draft: null,
+      editingText: null,
+      view: { scale: 1, offsetX: 0, offsetY: 0 },
+      canvasSize: { width: 1200, height: 700 },
+      touchMap: new Map(),
+      pinchState: null,
+      toolPrefs: {
+        [TOOL.BRUSH]: { color: "#000000", size: 10, shape: "circle", alpha: 100 },
+        [TOOL.LINE]: { color: "#000000", size: 4, alpha: 100 },
+        [TOOL.SHAPE]: { color: "#000000", size: 90, shape: "rectangle", stroke: 3, solid: true, alpha: 100 },
+        [TOOL.ARROW_ONE]: { color: "#000000", size: 4, alpha: 100 },
+        [TOOL.ARROW_TWO]: { color: "#000000", size: 4, alpha: 100 },
+        [TOOL.TEXT]: { color: "#000000", size: 28, alpha: 100 },
+        [TOOL.BACKGROUND]: { color: "#ffffff" },
+        image: { scalePercent: 100, alpha: 100 },
+      },
+      imageCache: {},
+    };
+
+    const $ = (id) => document.getElementById(id);
+    const canvas = $("canvas");
+    const viewport = $("viewport");
+    const fileInput = $("fileInput");
+    const textEditor = $("textEditor");
+    const confirmOverlay = $("confirmOverlay");
+    const ctx = canvas.getContext("2d");
+
+    function selectedObject() {
+      return state.scene.objects.find((obj) => obj.id === state.selectedId) || null;
+    }
+
+    function activePrefs() {
+      return state.activeTool ? state.toolPrefs[state.activeTool] || {} : {};
+    }
+
+    function targetType() {
+      const sel = selectedObject();
+      if (sel) return sel.type;
+      if (state.activeTool === TOOL.ARROW_ONE || state.activeTool === TOOL.ARROW_TWO) return "arrow";
+      return state.activeTool;
+    }
+
+    function pushHistory(scene) {
+      const cloned = clone(scene);
+      state.history = state.history.slice(0, state.historyIndex + 1);
+      state.history.push(cloned);
+      state.historyIndex = state.history.length - 1;
+      state.scene = cloned;
+      renderAll();
+    }
+
+    function initHistory() {
+      state.history = [clone(state.scene)];
+      state.historyIndex = 0;
+    }
+
+    function screenToWorld(point) {
+      return {
+        x: (point.x - state.view.offsetX) / state.view.scale,
+        y: (point.y - state.view.offsetY) / state.view.scale,
+      };
+    }
+
+    function worldToScreen(point) {
+      return {
+        x: point.x * state.view.scale + state.view.offsetX,
+        y: point.y * state.view.scale + state.view.offsetY,
+      };
+    }
+
+    function zoomAt(screenPoint, nextScale) {
+      const scale = clamp(nextScale, 0.25, 6);
+      const worldPoint = screenToWorld(screenPoint);
+      state.view = {
+        scale,
+        offsetX: screenPoint.x - worldPoint.x * scale,
+        offsetY: screenPoint.y - worldPoint.y * scale,
+      };
+      renderAll();
+    }
+
+    function updateCanvasSize() {
+      const rect = viewport.getBoundingClientRect();
+      state.canvasSize = {
+        width: Math.max(320, Math.floor(rect.width)),
+        height: Math.max(220, Math.floor(rect.height)),
+      };
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = state.canvasSize.width * dpr;
+      canvas.height = state.canvasSize.height * dpr;
+      canvas.style.width = `${state.canvasSize.width}px`;
+      canvas.style.height = `${state.canvasSize.height}px`;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      renderAll();
+    }
+
+    function ensureImageCached(dataUrl, onLoad) {
+      const cached = state.imageCache[dataUrl];
+      if (cached) return cached;
+      const img = new Image();
+      state.imageCache[dataUrl] = { img, loaded: false };
+      img.onload = () => {
+        state.imageCache[dataUrl] = { img, loaded: true };
+        if (onLoad) onLoad();
+      };
+      img.src = dataUrl;
+      return state.imageCache[dataUrl];
+    }
+
+    function drawScene(targetCtx, scene, options = {}) {
+      const backgroundRect = options.backgroundRect || { x: 0, y: 0, w: state.canvasSize.width, h: state.canvasSize.height };
+      targetCtx.clearRect(0, 0, state.canvasSize.width, state.canvasSize.height);
+      targetCtx.fillStyle = scene.backgroundColor;
+      targetCtx.fillRect(backgroundRect.x, backgroundRect.y, backgroundRect.w, backgroundRect.h);
+
+      for (const object of scene.objects) {
+        if (object.type === "brush") drawBrush(targetCtx, object);
+        if (object.type === "line") drawLine(targetCtx, object);
+        if (object.type === "arrow") drawArrow(targetCtx, object);
+        if (object.type === "shape") drawShape(targetCtx, object);
+        if (object.type === "text") drawTextObject(targetCtx, object);
+        if (object.type === "image") {
+          const cached = ensureImageCached(object.dataUrl, renderAll);
+          if (cached.loaded) {
+            targetCtx.save();
+            targetCtx.globalAlpha = getAlpha01(object.alpha);
+            targetCtx.drawImage(cached.img, object.x, object.y, object.width, object.height);
+            targetCtx.restore();
+          }
+        }
+      }
+
+      if (options.preview) {
+        const preview = options.preview;
+        if (preview.type === "brush") drawBrush(targetCtx, preview);
+        if (preview.type === "line") drawLine(targetCtx, preview);
+        if (preview.type === "arrow") drawArrow(targetCtx, preview);
+        if (preview.type === "shape") drawShape(targetCtx, preview);
+      }
+
+      if (options.selectedId) {
+        const selected = scene.objects.find((obj) => obj.id === options.selectedId);
+        if (selected) {
+          const bounds = getObjectBounds(selected);
+          targetCtx.save();
+          targetCtx.strokeStyle = "#111111";
+          targetCtx.lineWidth = 2;
+          targetCtx.setLineDash([8, 6]);
+          targetCtx.strokeRect(bounds.x - 6, bounds.y - 6, bounds.w + 12, bounds.h + 12);
+          targetCtx.restore();
+        }
+      }
+    }
+
+    function renderCanvas() {
+      const backgroundRect = {
+        x: -state.view.offsetX / state.view.scale,
+        y: -state.view.offsetY / state.view.scale,
+        w: state.canvasSize.width / state.view.scale,
+        h: state.canvasSize.height / state.view.scale,
+      };
+
+      ctx.clearRect(0, 0, state.canvasSize.width, state.canvasSize.height);
+      ctx.save();
+      ctx.translate(state.view.offsetX, state.view.offsetY);
+      ctx.scale(state.view.scale, state.view.scale);
+      drawScene(ctx, state.scene, {
+        preview: state.draft,
+        selectedId: state.selectedId,
+        backgroundRect,
+      });
+      ctx.restore();
+    }
+
+    function renderTextEditor() {
+      if (!state.editingText) {
+        textEditor.style.display = "none";
+        return;
+      }
+      const screen = worldToScreen({ x: state.editingText.x, y: state.editingText.y });
+      textEditor.style.display = "block";
+      textEditor.style.left = `${screen.x}px`;
+      textEditor.style.top = `${screen.y}px`;
+      textEditor.style.minHeight = `${state.editingText.size * state.view.scale * 1.2}px`;
+      textEditor.style.fontSize = `${state.editingText.size * state.view.scale}px`;
+      textEditor.style.color = state.editingText.color;
+      textEditor.style.opacity = `${state.editingText.alpha / 100}`;
+      if (textEditor.value !== state.editingText.text) textEditor.value = state.editingText.text;
+    }
+
+    function renderTools() {
+      const grid = $("toolsGrid");
+      grid.innerHTML = "";
+      for (const tool of TOOL_ORDER) {
+        const btn = document.createElement("button");
+        btn.className = "tool-btn";
+        const active = tool === "select" ? state.selectMode : state.activeTool === tool;
+        if (active) btn.classList.add("active");
+        btn.textContent = TOOL_LABEL[tool];
+        btn.addEventListener("click", () => toggleTool(tool));
+        grid.appendChild(btn);
+      }
+    }
+
+    function renderShapes() {
+      const grid = $("shapeGrid");
+      grid.innerHTML = "";
+      const sel = selectedObject();
+      const currentShape = sel ? sel.shape : activePrefs().shape;
+      for (const shape of SHAPES) {
+        const btn = document.createElement("button");
+        btn.className = "btn";
+        if (currentShape === shape) btn.classList.add("active");
+        btn.style.minHeight = "26px";
+        btn.style.fontSize = "10px";
+        btn.textContent = shape;
+        btn.addEventListener("click", () => applyAttributesPatch({ shape }));
+        grid.appendChild(btn);
+      }
+    }
+
+    function renderColours() {
+      const grid = $("colourGrid");
+      grid.innerHTML = "";
+      const sel = selectedObject();
+      const currentColour = sel ? sel.color : state.activeTool === TOOL.BACKGROUND ? state.scene.backgroundColor : activePrefs().color;
+      for (const swatch of COLOUR_SWATCHES) {
+        const btn = document.createElement("button");
+        btn.className = "swatch";
+        if (currentColour === swatch) btn.classList.add("active");
+        btn.style.background = swatch;
+        btn.addEventListener("click", () => applyAttributesPatch({ color: swatch }));
+        grid.appendChild(btn);
+      }
+    }
+
+    function renderAttributes() {
+      const type = targetType();
+      const sel = selectedObject();
+      const prefs = activePrefs();
+
+      const supportsSize = ["brush", "line", "shape", "arrow", "text", "image"].includes(type);
+      const supportsShape = ["brush", "shape"].includes(type);
+      const supportsAlpha = ["brush", "line", "shape", "arrow", "text", "image"].includes(type);
+      const supportsColour = ["brush", "line", "shape", "arrow", "text", TOOL.BACKGROUND].includes(type);
+      const supportsStrokeSolid = type === "shape";
+
+      $("attributesSection").style.display = (supportsSize || supportsShape || supportsAlpha || supportsColour || supportsStrokeSolid) ? "flex" : "none";
+      $("sizeField").style.display = supportsSize ? "flex" : "none";
+      $("shapeField").style.display = supportsShape ? "flex" : "none";
+      $("alphaField").style.display = supportsAlpha ? "flex" : "none";
+      $("strokeField").style.display = supportsStrokeSolid ? "flex" : "none";
+      $("solidField").style.display = supportsStrokeSolid ? "flex" : "none";
+      $("colourField").style.display = supportsColour ? "flex" : "none";
+      $("backgroundRgbField").style.display = state.activeTool === TOOL.BACKGROUND && !sel ? "grid" : "none";
+
+      const currentSize = sel?.type === "image" ? state.toolPrefs.image.scalePercent : sel?.size ?? prefs.size ?? 1;
+      const currentAlpha = sel ? (sel.alpha ?? 100) : (prefs.alpha ?? 100);
+      const currentStroke = sel?.stroke ?? prefs.stroke ?? 3;
+      const currentSolid = sel?.solid ?? prefs.solid ?? true;
+
+      $("sizeInput").value = currentSize;
+      $("alphaInput").value = currentAlpha;
+      $("alphaValue").textContent = String(currentAlpha);
+      $("strokeInput").value = currentStroke;
+      $("solidInput").checked = !!currentSolid;
+      $("bgR").value = backgroundRgb.r;
+      $("bgG").value = backgroundRgb.g;
+      $("bgB").value = backgroundRgb.b;
+
+      if (supportsShape) renderShapes();
+      if (supportsColour) renderColours();
+    }
+
+    function renderAll() {
+      renderTools();
+      renderAttributes();
+      renderCanvas();
+      renderTextEditor();
+    }
+
+    function applyAttributesPatch(patch) {
+      const sel = selectedObject();
+      if (sel) {
+        const nextScene = clone(state.scene);
+        const index = nextScene.objects.findIndex((obj) => obj.id === state.selectedId);
+        if (index === -1) return;
+        nextScene.objects[index] = updateSelectedObject(nextScene.objects[index], patch);
+        pushHistory(nextScene);
+        return;
+      }
+
+      if (state.activeTool === TOOL.BACKGROUND && patch.color) {
+        const nextScene = clone(state.scene);
+        nextScene.backgroundColor = patch.color;
+        updateToolPreference(TOOL.BACKGROUND, { color: patch.color });
+        pushHistory(nextScene);
+        return;
+      }
+
+      if (state.activeTool) {
+        updateToolPreference(state.activeTool, patch);
+        renderAll();
+      }
+    }
+
+    function startTextAt(worldPoint) {
+      state.editingText = {
+        x: worldPoint.x,
+        y: worldPoint.y,
+        text: "",
+        size: state.toolPrefs[TOOL.TEXT].size,
+        color: state.toolPrefs[TOOL.TEXT].color,
+        alpha: state.toolPrefs[TOOL.TEXT].alpha,
+      };
+      renderTextEditor();
+      requestAnimationFrame(() => textEditor.focus());
+      setTimeout(() => textEditor.focus(), 0);
+    }
+
+    function commitEditingText() {
+      if (!state.editingText || !state.editingText.text.trim()) {
+        state.editingText = null;
+        renderTextEditor();
+        return;
+      }
+      const nextScene = clone(state.scene);
+      const newTextObject = {
+        id: makeId("text"),
+        type: "text",
+        x: state.editingText.x,
+        y: state.editingText.y,
+        text: state.editingText.text,
+        size: state.editingText.size,
+        color: state.editingText.color,
+        alpha: state.editingText.alpha,
+      };
+      nextScene.objects.push(newTextObject);
+      pushHistory(nextScene);
+      state.selectedId = newTextObject.id;
+      state.editingText = null;
+      renderAll();
+    }
+
+    function toggleTool(tool) {
+      if (state.activeTool === TOOL.TEXT && state.editingText) {
+        commitEditingText();
+      }
+
+      if (tool === "select") {
+        const next = !state.selectMode;
+        state.selectMode = next;
+        state.activeTool = null;
+        state.draft = null;
+        state.interaction = null;
+        if (!next) state.selectedId = null;
+        renderAll();
+        return;
+      }
+
+      const nextTool = state.activeTool === tool ? null : tool;
+      state.activeTool = nextTool;
+      state.selectMode = false;
+      state.draft = null;
+      state.interaction = null;
+      state.selectedId = null;
+      renderAll();
+    }
+
+    function clearCanvasNow() {
+      updateToolPreference(TOOL.BACKGROUND, { color: "#ffffff" });
+      state.scene = { backgroundColor: "#ffffff", objects: [] };
+      initHistory();
+      state.selectedId = null;
+      state.draft = null;
+      state.interaction = null;
+      state.editingText = null;
+      state.view = { scale: 1, offsetX: 0, offsetY: 0 };
+      confirmOverlay.classList.remove("show");
+      renderAll();
+    }
+
+    function pointerScreenPoint(event) {
+      return canvasPointFromEvent(event, canvas);
+    }
+
+    function onPointerDown(event) {
+      state.touchMap.set(event.pointerId, { x: event.clientX, y: event.clientY });
+      if (state.touchMap.size >= 2) {
+        state.pinchState = {
+          startDistance: getTwoTouchDistance(state.touchMap),
+          startScale: state.view.scale,
+          startOffsetX: state.view.offsetX,
+          startOffsetY: state.view.offsetY,
+        };
+        state.interaction = { kind: "pinchPan" };
+        return;
+      }
+
+      const screenPoint = pointerScreenPoint(event);
+      const worldPoint = screenToWorld(screenPoint);
+
+      if (state.activeTool === TOOL.TEXT) {
+        if (!state.editingText) startTextAt(worldPoint);
+        else textEditor.focus();
+        return;
+      }
+
+      if (state.editingText) commitEditingText();
+
+      if (state.selectMode) {
+        const hit = [...state.scene.objects].reverse().find((obj) => hitTestObject(obj, worldPoint)) || null;
+        if (hit) {
+          state.selectedId = hit.id;
+          state.interaction = { kind: "selectMove", id: hit.id, startWorld: worldPoint, baseScene: clone(state.scene) };
+          canvas.setPointerCapture?.(event.pointerId);
+        } else {
+          state.selectedId = null;
+          state.interaction = { kind: "pan", startScreen: screenPoint, startOffsetX: state.view.offsetX, startOffsetY: state.view.offsetY };
+          canvas.setPointerCapture?.(event.pointerId);
+        }
+        renderAll();
+        return;
+      }
+
+      const prefs = activePrefs();
+
+      if (state.activeTool === TOOL.BRUSH) {
+        const points = [worldPoint];
+        state.interaction = { kind: "brush", points };
+        state.draft = { type: "brush", points, size: prefs.size, shape: prefs.shape, color: prefs.color, alpha: prefs.alpha };
+        canvas.setPointerCapture?.(event.pointerId);
+        renderCanvas();
+        return;
+      }
+
+      if (state.activeTool === TOOL.SHAPE) {
+        state.interaction = { kind: "shape", start: worldPoint };
+        state.draft = buildShapeObject(worldPoint, worldPoint);
+        canvas.setPointerCapture?.(event.pointerId);
+        renderCanvas();
+        return;
+      }
+
+      if (state.activeTool === TOOL.LINE || state.activeTool === TOOL.ARROW_ONE || state.activeTool === TOOL.ARROW_TWO) {
+        state.interaction = { kind: "dragLine", start: worldPoint, tool: state.activeTool };
+        state.draft = state.activeTool === TOOL.LINE
+          ? { type: "line", start: worldPoint, end: worldPoint, color: prefs.color, size: prefs.size, alpha: prefs.alpha }
+          : {
+              type: "arrow",
+              start: worldPoint,
+              end: worldPoint,
+              color: prefs.color,
+              size: prefs.size,
+              alpha: prefs.alpha,
+              startHead: state.activeTool === TOOL.ARROW_TWO,
+              endHead: true,
+            };
+        canvas.setPointerCapture?.(event.pointerId);
+        renderCanvas();
+        return;
+      }
+
+      state.interaction = { kind: "pan", startScreen: screenPoint, startOffsetX: state.view.offsetX, startOffsetY: state.view.offsetY };
+      canvas.setPointerCapture?.(event.pointerId);
+    }
+
+    function onPointerMove(event) {
+      if (!state.interaction) return;
+
+      if (state.touchMap.has(event.pointerId)) {
+        state.touchMap.set(event.pointerId, { x: event.clientX, y: event.clientY });
+      }
+
+      if (state.interaction.kind === "pinchPan" && state.pinchState && state.touchMap.size >= 2) {
+        const currentDistance = getTwoTouchDistance(state.touchMap);
+        const values = Array.from(state.touchMap.values());
+        const centerClient = midpoint(values[0], values[1]);
+        const rect = canvas.getBoundingClientRect();
+        const screenCenter = { x: centerClient.x - rect.left, y: centerClient.y - rect.top };
+        const newScale = clamp(
+          state.pinchState.startScale * (currentDistance / Math.max(1, state.pinchState.startDistance)),
+          0.25,
+          6
+        );
+        const worldAtCenter = {
+          x: (screenCenter.x - state.pinchState.startOffsetX) / state.pinchState.startScale,
+          y: (screenCenter.y - state.pinchState.startOffsetY) / state.pinchState.startScale,
+        };
+        state.view = {
+          scale: newScale,
+          offsetX: screenCenter.x - worldAtCenter.x * newScale,
+          offsetY: screenCenter.y - worldAtCenter.y * newScale,
+        };
+        renderAll();
+        return;
+      }
+
+      const screenPoint = pointerScreenPoint(event);
+      const worldPoint = screenToWorld(screenPoint);
+
+      if (state.interaction.kind === "pan") {
+        state.view = {
+          ...state.view,
+          offsetX: state.interaction.startOffsetX + (screenPoint.x - state.interaction.startScreen.x),
+          offsetY: state.interaction.startOffsetY + (screenPoint.y - state.interaction.startScreen.y),
+        };
+        renderAll();
+        return;
+      }
+
+      if (state.interaction.kind === "selectMove") {
+        const dx = worldPoint.x - state.interaction.startWorld.x;
+        const dy = worldPoint.y - state.interaction.startWorld.y;
+        const nextScene = clone(state.interaction.baseScene);
+        const index = nextScene.objects.findIndex((obj) => obj.id === state.interaction.id);
+        if (index !== -1) {
+          nextScene.objects[index] = translateObject(nextScene.objects[index], dx, dy);
+          state.scene = nextScene;
+          renderAll();
+        }
+        return;
+      }
+
+      const prefs = activePrefs();
+
+      if (state.interaction.kind === "brush") {
+        state.interaction.points = [...state.interaction.points, worldPoint];
+        state.draft = { type: "brush", points: state.interaction.points, size: prefs.size, shape: prefs.shape, color: prefs.color, alpha: prefs.alpha };
+        renderCanvas();
+        return;
+      }
+
+      if (state.interaction.kind === "shape") {
+        state.draft = buildShapeObject(state.interaction.start, worldPoint);
+        renderCanvas();
+        return;
+      }
+
+      if (state.interaction.kind === "dragLine") {
+        state.draft = state.interaction.tool === TOOL.LINE
+          ? { type: "line", start: state.interaction.start, end: worldPoint, color: prefs.color, size: prefs.size, alpha: prefs.alpha }
+          : {
+              type: "arrow",
+              start: state.interaction.start,
+              end: worldPoint,
+              color: prefs.color,
+              size: prefs.size,
+              alpha: prefs.alpha,
+              startHead: state.interaction.tool === TOOL.ARROW_TWO,
+              endHead: true,
+            };
+        renderCanvas();
+      }
+    }
+
+    function onPointerUp(event) {
+      state.touchMap.delete(event.pointerId);
+      if (state.touchMap.size < 2) state.pinchState = null;
+
+      if (!state.interaction || state.interaction.kind === "pinchPan") {
+        state.interaction = null;
+        return;
+      }
+
+      const screenPoint = pointerScreenPoint(event);
+      const worldPoint = screenToWorld(screenPoint);
+      const prefs = activePrefs();
+
+      if (state.interaction.kind === "pan") {
+        state.interaction = null;
+        canvas.releasePointerCapture?.(event.pointerId);
+        return;
+      }
+
+      if (state.interaction.kind === "selectMove") {
+        pushHistory(clone(state.scene));
+        state.interaction = null;
+        canvas.releasePointerCapture?.(event.pointerId);
+        return;
+      }
+
+      if (state.interaction.kind === "brush") {
+        const nextScene = clone(state.scene);
+        const newBrush = {
+          id: makeId("brush"),
+          type: "brush",
+          points: state.interaction.points.length ? state.interaction.points : [worldPoint],
+          size: prefs.size,
+          shape: prefs.shape,
+          color: prefs.color,
+          alpha: prefs.alpha,
+        };
+        nextScene.objects.push(newBrush);
+        pushHistory(nextScene);
+        state.selectedId = newBrush.id;
+        state.interaction = null;
+        state.draft = null;
+        canvas.releasePointerCapture?.(event.pointerId);
+        renderAll();
+        return;
+      }
+
+      if (state.interaction.kind === "shape") {
+        const nextScene = clone(state.scene);
+        const newShape = buildShapeObject(state.interaction.start, worldPoint);
+        nextScene.objects.push(newShape);
+        pushHistory(nextScene);
+        state.selectedId = newShape.id;
+        state.interaction = null;
+        state.draft = null;
+        canvas.releasePointerCapture?.(event.pointerId);
+        renderAll();
+        return;
+      }
+
+      if (state.interaction.kind === "dragLine") {
+        const nextScene = clone(state.scene);
+        const object = state.interaction.tool === TOOL.LINE
+          ? {
+              id: makeId("line"),
+              type: "line",
+              start: state.interaction.start,
+              end: worldPoint,
+              color: prefs.color,
+              size: prefs.size,
+              alpha: prefs.alpha,
+            }
+          : {
+              id: makeId("arrow"),
+              type: "arrow",
+              start: state.interaction.start,
+              end: worldPoint,
+              color: prefs.color,
+              size: prefs.size,
+              alpha: prefs.alpha,
+              startHead: state.interaction.tool === TOOL.ARROW_TWO,
+              endHead: true,
+            };
+        nextScene.objects.push(object);
+        pushHistory(nextScene);
+        state.selectedId = object.id;
+        state.interaction = null;
+        state.draft = null;
+        canvas.releasePointerCapture?.(event.pointerId);
+        renderAll();
+      }
+    }
+
+    function renderAndFocusText() {
+      renderAll();
+      if (state.activeTool === TOOL.TEXT && state.editingText) {
+        requestAnimationFrame(() => textEditor.focus());
+      }
+    }
+
+    textEditor.addEventListener("input", () => {
+      if (!state.editingText) return;
+      state.editingText.text = textEditor.value;
+    });
+
+    textEditor.addEventListener("blur", () => {
+      if (state.activeTool === TOOL.TEXT) {
+        setTimeout(() => {
+          if (state.activeTool === TOOL.TEXT && state.editingText) textEditor.focus();
+        }, 0);
+      } else if (state.editingText) {
+        commitEditingText();
+      }
+    });
+
+    $("undoBtn").addEventListener("click", undo);
+    $("redoBtn").addEventListener("click", redo);
+    $("uploadBtn").addEventListener("click", () => fileInput.click());
+    $("pasteBtn").addEventListener("click", pasteImageFromClipboard);
+    $("saveBtn").addEventListener("click", saveCanvas);
+    $("copyBtn").addEventListener("click", copyCanvas);
+    $("clearBtn").addEventListener("click", () => confirmOverlay.classList.add("show"));
+    $("cancelClearBtn").addEventListener("click", () => confirmOverlay.classList.remove("show"));
+    $("confirmClearBtn").addEventListener("click", clearCanvasNow);
+    fileInput.addEventListener("change", handleImageUpload);
+
+    function bindStepper(inputId, upId, downId, min, max, apply) {
+      const input = $(inputId);
+      const up = $(upId);
+      const down = $(downId);
+      input.addEventListener("change", () => apply(clamp(Number(input.value) || 0, min, max)));
+      up.addEventListener("click", () => apply(clamp((Number(input.value) || 0) + 1, min, max)));
+      down.addEventListener("click", () => apply(clamp((Number(input.value) || 0) - 1, min, max)));
+    }
+
+    bindStepper("sizeInput", "sizeUp", "sizeDown", 1, 300, (value) => applyAttributesPatch({ size: value }));
+    bindStepper("strokeInput", "strokeUp", "strokeDown", 0, 60, (value) => applyAttributesPatch({ stroke: value }));
+    bindStepper("bgR", "bgRUp", "bgRDown", 0, 255, (value) => applyAttributesPatch({ color: rgbToHex(value, Number($("bgG").value), Number($("bgB").value)) }));
+    bindStepper("bgG", "bgGUp", "bgGDown", 0, 255, (value) => applyAttributesPatch({ color: rgbToHex(Number($("bgR").value), value, Number($("bgB").value)) }));
+    bindStepper("bgB", "bgBUp", "bgBDown", 0, 255, (value) => applyAttributesPatch({ color: rgbToHex(Number($("bgR").value), Number($("bgG").value), value) }));
+
+    $("alphaInput").addEventListener("input", (e) => applyAttributesPatch({ alpha: Number(e.target.value) }));
+    $("solidInput").addEventListener("change", (e) => applyAttributesPatch({ solid: e.target.checked }));
+
+    canvas.addEventListener("pointerdown", onPointerDown);
+    canvas.addEventListener("pointermove", onPointerMove);
+    canvas.addEventListener("pointerup", onPointerUp);
+    canvas.addEventListener("pointerleave", onPointerUp);
+    canvas.addEventListener("wheel", (event) => {
+      event.preventDefault();
+      const rect = canvas.getBoundingClientRect();
+      const point = { x: event.clientX - rect.left, y: event.clientY - rect.top };
+      const factor = event.deltaY < 0 ? 1.1 : 1 / 1.1;
+      zoomAt(point, state.view.scale * factor);
+    }, { passive: false });
+
+    window.addEventListener("keydown", (event) => {
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "z") {
+        event.preventDefault();
+        if (event.shiftKey) redo();
+        else undo();
+      }
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "y") {
+        event.preventDefault();
+        redo();
+      }
+      if (event.key === "Escape") {
+        if (state.activeTool === TOOL.TEXT && state.editingText) {
+          commitEditingText();
+        } else {
+          state.editingText = null;
+          state.draft = null;
+          state.interaction = null;
+          renderAll();
+        }
+      }
+    });
+
+    window.addEventListener("paste", (event) => {
+      const items = event.clipboardData?.items || [];
+      const imageItem = [...items].find((item) => item.type.startsWith("image/"));
+      if (!imageItem) return;
+      event.preventDefault();
+      const file = imageItem.getAsFile();
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => addImage(reader.result);
+      reader.readAsDataURL(file);
+    });
+
+    window.addEventListener("resize", updateCanvasSize);
+
+    initHistory();
+    updateCanvasSize();
+    renderAll();
+  </script>
+</body>
+</html>
