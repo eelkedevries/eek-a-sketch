@@ -6,7 +6,7 @@
   <title>eek-a-sketch</title>
   <style>
     :root {
-      --panel-w: 168px;
+      --panel-w: 172px;
       --bg: #e5e7eb;
       --panel: rgba(255,255,255,.96);
       --border: #cbd5e1;
@@ -226,6 +226,7 @@
       outline: none;
       resize: both;
       font: inherit;
+      display: none;
     }
 
     #confirmOverlay {
@@ -261,7 +262,7 @@
     <input id="fileInput" type="file" accept="image/*" hidden />
     <div id="viewport">
       <canvas id="canvas"></canvas>
-      <textarea id="textEditor" placeholder="Type here" rows="2" style="display:none"></textarea>
+      <textarea id="textEditor" placeholder="Type here" rows="2"></textarea>
 
       <div id="sidebar">
         <div class="section">
@@ -393,6 +394,324 @@
   </div>
 
   <script>
+    const TOOL = {
+      BRUSH: "brush",
+      LINE: "line",
+      SHAPE: "shape",
+      ARROW_ONE: "arrowOne",
+      ARROW_TWO: "arrowTwo",
+      TEXT: "text",
+      BACKGROUND: "background",
+    };
+
+    const TOOL_ORDER = [
+      "select",
+      TOOL.BRUSH,
+      TOOL.LINE,
+      TOOL.SHAPE,
+      TOOL.ARROW_ONE,
+      TOOL.ARROW_TWO,
+      TOOL.TEXT,
+      TOOL.BACKGROUND,
+    ];
+
+    const TOOL_LABEL = {
+      select: "Select",
+      [TOOL.BRUSH]: "Brush",
+      [TOOL.LINE]: "Line",
+      [TOOL.SHAPE]: "Shape",
+      [TOOL.ARROW_ONE]: "Arrow one-way",
+      [TOOL.ARROW_TWO]: "Arrow two-way",
+      [TOOL.TEXT]: "Text",
+      [TOOL.BACKGROUND]: "Background",
+    };
+
+    const SHAPES = ["circle", "square", "rectangle", "triangle", "hexagon"];
+    const COLOUR_SWATCHES = [
+      "#000000", "#404040", "#808080", "#bfbfbf", "#ffffff",
+      "#7f1d1d", "#b91c1c", "#ef4444", "#f87171", "#fecaca",
+      "#7c2d12", "#c2410c", "#f97316", "#fb923c", "#fed7aa",
+      "#78350f", "#d97706", "#f59e0b", "#fbbf24", "#fde68a",
+      "#365314", "#65a30d", "#84cc16", "#a3e635", "#d9f99d",
+      "#14532d", "#16a34a", "#22c55e", "#4ade80", "#bbf7d0",
+      "#1e3a8a", "#2563eb", "#3b82f6", "#60a5fa", "#bfdbfe",
+    ];
+
+    function clamp(value, min, max) { return Math.max(min, Math.min(max, value)); }
+    function clone(value) { return JSON.parse(JSON.stringify(value)); }
+    function makeId(prefix = "item") { return `${prefix}_${Math.random().toString(36).slice(2, 10)}_${Date.now().toString(36)}`; }
+    function distance(a, b) { return Math.hypot(b.x - a.x, b.y - a.y); }
+    function rectFromPoints(a, b) { return { x: Math.min(a.x, b.x), y: Math.min(a.y, b.y), w: Math.abs(b.x - a.x), h: Math.abs(b.y - a.y) }; }
+    function canvasPointFromEvent(event, canvas) {
+      const rect = canvas.getBoundingClientRect();
+      return { x: event.clientX - rect.left, y: event.clientY - rect.top };
+    }
+    function pointInRect(point, rect) {
+      return point.x >= rect.x && point.x <= rect.x + rect.w && point.y >= rect.y && point.y <= rect.y + rect.h;
+    }
+    function midpoint(a, b) { return { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 }; }
+    function getAlpha01(alpha) { return clamp(alpha ?? 100, 0, 100) / 100; }
+    function rgbToHex(r, g, b) {
+      const toHex = (v) => clamp(Number(v) || 0, 0, 255).toString(16).padStart(2, "0");
+      return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+    }
+
+    function drawPolygonPath(ctx, cx, cy, rx, ry, sides, rotation = -Math.PI / 2) {
+      ctx.beginPath();
+      for (let i = 0; i < sides; i += 1) {
+        const angle = rotation + (Math.PI * 2 * i) / sides;
+        const x = cx + Math.cos(angle) * rx;
+        const y = cy + Math.sin(angle) * ry;
+        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      }
+      ctx.closePath();
+    }
+
+    function drawStamp(ctx, point, size, shape, color, alpha = 100) {
+      const half = size / 2;
+      ctx.save();
+      ctx.fillStyle = color;
+      ctx.globalAlpha = getAlpha01(alpha);
+      if (shape === "circle") {
+        ctx.beginPath();
+        ctx.arc(point.x, point.y, Math.max(0.5, half), 0, Math.PI * 2);
+        ctx.fill();
+      } else if (shape === "square") {
+        ctx.fillRect(point.x - half, point.y - half, size, size);
+      } else if (shape === "rectangle") {
+        ctx.fillRect(point.x - half, point.y - half * 0.65, size, size * 0.65);
+      } else if (shape === "triangle") {
+        ctx.beginPath();
+        ctx.moveTo(point.x, point.y - half);
+        ctx.lineTo(point.x + half, point.y + half);
+        ctx.lineTo(point.x - half, point.y + half);
+        ctx.closePath();
+        ctx.fill();
+      } else if (shape === "hexagon") {
+        drawPolygonPath(ctx, point.x, point.y, half, half, 6);
+        ctx.fill();
+      }
+      ctx.restore();
+    }
+
+    function drawBrush(ctx, object) {
+      const points = object.points || [];
+      if (!points.length) return;
+      if (points.length === 1) {
+        drawStamp(ctx, points[0], object.size, object.shape, object.color, object.alpha);
+        return;
+      }
+      const spacing = Math.max(1, object.size * 0.18);
+      for (let i = 0; i < points.length - 1; i += 1) {
+        const start = points[i];
+        const end = points[i + 1];
+        const steps = Math.max(1, Math.ceil(distance(start, end) / spacing));
+        for (let s = 0; s <= steps; s += 1) {
+          const t = s / steps;
+          drawStamp(ctx, { x: start.x + (end.x - start.x) * t, y: start.y + (end.y - start.y) * t }, object.size, object.shape, object.color, object.alpha);
+        }
+      }
+    }
+
+    function drawLine(ctx, object) {
+      ctx.save();
+      ctx.globalAlpha = getAlpha01(object.alpha);
+      ctx.strokeStyle = object.color;
+      ctx.lineWidth = object.size;
+      ctx.lineCap = "round";
+      ctx.lineJoin = "round";
+      ctx.beginPath();
+      ctx.moveTo(object.start.x, object.start.y);
+      ctx.lineTo(object.end.x, object.end.y);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    function getArrowHeadLength(size) { return Math.max(12, size * 3.5); }
+
+    function drawArrowHead(ctx, from, to, size, color, alpha = 100) {
+      const angle = Math.atan2(to.y - from.y, to.x - from.x);
+      const headLength = getArrowHeadLength(size);
+      const spread = Math.PI / 7;
+      ctx.save();
+      ctx.globalAlpha = getAlpha01(alpha);
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.moveTo(to.x, to.y);
+      ctx.lineTo(to.x - headLength * Math.cos(angle - spread), to.y - headLength * Math.sin(angle - spread));
+      ctx.lineTo(to.x - headLength * Math.cos(angle + spread), to.y - headLength * Math.sin(angle + spread));
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+    }
+
+    function drawArrow(ctx, object) {
+      const dx = object.end.x - object.start.x;
+      const dy = object.end.y - object.start.y;
+      const length = Math.hypot(dx, dy);
+      if (length === 0) {
+        if (object.endHead) drawArrowHead(ctx, { x: object.start.x - 1, y: object.start.y }, object.end, object.size, object.color, object.alpha);
+        return;
+      }
+      const unitX = dx / length;
+      const unitY = dy / length;
+      const headLength = getArrowHeadLength(object.size);
+      const lineStart = object.startHead ? { x: object.start.x + unitX * headLength, y: object.start.y + unitY * headLength } : object.start;
+      const lineEnd = object.endHead ? { x: object.end.x - unitX * headLength, y: object.end.y - unitY * headLength } : object.end;
+      drawLine(ctx, { ...object, start: lineStart, end: lineEnd });
+      if (object.startHead) drawArrowHead(ctx, object.end, object.start, object.size, object.color, object.alpha);
+      if (object.endHead) drawArrowHead(ctx, object.start, object.end, object.size, object.color, object.alpha);
+    }
+
+    function drawShape(ctx, object) {
+      const w = Math.max(1, object.w);
+      const h = Math.max(1, object.h);
+      const cx = object.x + w / 2;
+      const cy = object.y + h / 2;
+      ctx.save();
+      ctx.globalAlpha = getAlpha01(object.alpha);
+      ctx.lineWidth = object.stroke;
+      ctx.strokeStyle = object.color;
+      ctx.fillStyle = object.color;
+      if (object.shape === "rectangle" || object.shape === "square") {
+        if (object.solid) ctx.fillRect(object.x, object.y, w, h);
+        if (object.stroke > 0) ctx.strokeRect(object.x, object.y, w, h);
+      } else if (object.shape === "circle") {
+        ctx.beginPath();
+        ctx.ellipse(cx, cy, w / 2, h / 2, 0, 0, Math.PI * 2);
+        if (object.solid) ctx.fill();
+        if (object.stroke > 0) ctx.stroke();
+      } else if (object.shape === "triangle") {
+        ctx.beginPath();
+        ctx.moveTo(cx, object.y);
+        ctx.lineTo(object.x + w, object.y + h);
+        ctx.lineTo(object.x, object.y + h);
+        ctx.closePath();
+        if (object.solid) ctx.fill();
+        if (object.stroke > 0) ctx.stroke();
+      } else if (object.shape === "hexagon") {
+        drawPolygonPath(ctx, cx, cy, w / 2, h / 2, 6);
+        if (object.solid) ctx.fill();
+        if (object.stroke > 0) ctx.stroke();
+      }
+      ctx.restore();
+    }
+
+    function drawTextObject(ctx, object) {
+      ctx.save();
+      ctx.globalAlpha = getAlpha01(object.alpha);
+      ctx.fillStyle = object.color;
+      ctx.font = `${object.size}px sans-serif`;
+      ctx.textBaseline = "top";
+      const lines = String(object.text || "").split("\n");
+      lines.forEach((line, index) => {
+        ctx.fillText(line, object.x, object.y + index * object.size * 1.25);
+      });
+      ctx.restore();
+    }
+
+    function getTextBounds(object) {
+      const lines = String(object.text || "").split("\n");
+      const width = Math.max(...lines.map((line) => line.length), 1) * object.size * 0.62;
+      const height = lines.length * object.size * 1.25;
+      return { x: object.x, y: object.y, w: width, h: height };
+    }
+
+    function getBrushBounds(object) {
+      const points = object.points || [];
+      if (!points.length) return { x: 0, y: 0, w: 0, h: 0 };
+      const xs = points.map((p) => p.x);
+      const ys = points.map((p) => p.y);
+      const half = (object.size || 1) / 2;
+      return {
+        x: Math.min(...xs) - half,
+        y: Math.min(...ys) - half,
+        w: Math.max(...xs) - Math.min(...xs) + object.size,
+        h: Math.max(...ys) - Math.min(...ys) + object.size,
+      };
+    }
+
+    function getLineBounds(object) {
+      const minX = Math.min(object.start.x, object.end.x);
+      const minY = Math.min(object.start.y, object.end.y);
+      const maxX = Math.max(object.start.x, object.end.x);
+      const maxY = Math.max(object.start.y, object.end.y);
+      const pad = Math.max(8, object.size * 4);
+      return { x: minX - pad, y: minY - pad, w: maxX - minX + pad * 2, h: maxY - minY + pad * 2 };
+    }
+
+    function getObjectBounds(object) {
+      if (object.type === "brush") return getBrushBounds(object);
+      if (object.type === "shape") return { x: object.x, y: object.y, w: object.w, h: object.h };
+      if (object.type === "image") return { x: object.x, y: object.y, w: object.width, h: object.height };
+      if (object.type === "text") return getTextBounds(object);
+      if (object.type === "line" || object.type === "arrow") return getLineBounds(object);
+      return { x: 0, y: 0, w: 0, h: 0 };
+    }
+
+    function pointSegmentDistance(point, a, b) {
+      const dx = b.x - a.x;
+      const dy = b.y - a.y;
+      if (dx === 0 && dy === 0) return distance(point, a);
+      const t = clamp(((point.x - a.x) * dx + (point.y - a.y) * dy) / (dx * dx + dy * dy), 0, 1);
+      const proj = { x: a.x + dx * t, y: a.y + dy * t };
+      return distance(point, proj);
+    }
+
+    function hitTestObject(object, point) {
+      if (object.type === "line" || object.type === "arrow") return pointSegmentDistance(point, object.start, object.end) <= Math.max(10, object.size + 6);
+      const bounds = getObjectBounds(object);
+      return pointInRect(point, { x: bounds.x - 6, y: bounds.y - 6, w: bounds.w + 12, h: bounds.h + 12 });
+    }
+
+    function translateObject(object, dx, dy) {
+      const next = clone(object);
+      if (next.type === "brush") next.points = next.points.map((p) => ({ x: p.x + dx, y: p.y + dy }));
+      else if (next.type === "shape" || next.type === "image" || next.type === "text") { next.x += dx; next.y += dy; }
+      else if (next.type === "line" || next.type === "arrow") {
+        next.start.x += dx; next.start.y += dy; next.end.x += dx; next.end.y += dy;
+      }
+      return next;
+    }
+
+    function updateSelectedObject(object, patch) {
+      const next = clone(object);
+      if (next.type === "brush") {
+        if (typeof patch.size === "number") next.size = patch.size;
+        if (patch.shape) next.shape = patch.shape;
+        if (patch.color) next.color = patch.color;
+        if (typeof patch.alpha === "number") next.alpha = patch.alpha;
+      } else if (next.type === "line" || next.type === "arrow") {
+        if (typeof patch.size === "number") next.size = patch.size;
+        if (patch.color) next.color = patch.color;
+        if (typeof patch.alpha === "number") next.alpha = patch.alpha;
+      } else if (next.type === "shape") {
+        if (typeof patch.size === "number") {
+          const cx = next.x + next.w / 2;
+          const cy = next.y + next.h / 2;
+          next.w = patch.size; next.h = patch.size; next.x = cx - next.w / 2; next.y = cy - next.h / 2;
+        }
+        if (patch.shape) next.shape = patch.shape;
+        if (patch.color) next.color = patch.color;
+        if (typeof patch.alpha === "number") next.alpha = patch.alpha;
+        if (typeof patch.stroke === "number") next.stroke = patch.stroke;
+        if (typeof patch.solid === "boolean") next.solid = patch.solid;
+      } else if (next.type === "text") {
+        if (typeof patch.size === "number") next.size = patch.size;
+        if (patch.color) next.color = patch.color;
+        if (typeof patch.alpha === "number") next.alpha = patch.alpha;
+      } else if (next.type === "image") {
+        if (typeof patch.alpha === "number") next.alpha = patch.alpha;
+      }
+      return next;
+    }
+
+    function getTwoTouchDistance(touchMap) {
+      const values = Array.from(touchMap.values());
+      if (values.length < 2) return 0;
+      return distance(values[0], values[1]);
+    }
+
     const state = {
       scene: { backgroundColor: "#ffffff", objects: [] },
       history: [],
@@ -428,14 +747,8 @@
     const confirmOverlay = $("confirmOverlay");
     const ctx = canvas.getContext("2d");
 
-    function selectedObject() {
-      return state.scene.objects.find((obj) => obj.id === state.selectedId) || null;
-    }
-
-    function activePrefs() {
-      return state.activeTool ? state.toolPrefs[state.activeTool] || {} : {};
-    }
-
+    function selectedObject() { return state.scene.objects.find((obj) => obj.id === state.selectedId) || null; }
+    function activePrefs() { return state.activeTool ? state.toolPrefs[state.activeTool] || {} : {}; }
     function targetType() {
       const sel = selectedObject();
       if (sel) return sel.type;
@@ -452,42 +765,24 @@
       renderAll();
     }
 
-    function initHistory() {
-      state.history = [clone(state.scene)];
-      state.historyIndex = 0;
-    }
+    function initHistory() { state.history = [clone(state.scene)]; state.historyIndex = 0; }
 
     function screenToWorld(point) {
-      return {
-        x: (point.x - state.view.offsetX) / state.view.scale,
-        y: (point.y - state.view.offsetY) / state.view.scale,
-      };
+      return { x: (point.x - state.view.offsetX) / state.view.scale, y: (point.y - state.view.offsetY) / state.view.scale };
     }
-
     function worldToScreen(point) {
-      return {
-        x: point.x * state.view.scale + state.view.offsetX,
-        y: point.y * state.view.scale + state.view.offsetY,
-      };
+      return { x: point.x * state.view.scale + state.view.offsetX, y: point.y * state.view.scale + state.view.offsetY };
     }
-
     function zoomAt(screenPoint, nextScale) {
       const scale = clamp(nextScale, 0.25, 6);
       const worldPoint = screenToWorld(screenPoint);
-      state.view = {
-        scale,
-        offsetX: screenPoint.x - worldPoint.x * scale,
-        offsetY: screenPoint.y - worldPoint.y * scale,
-      };
+      state.view = { scale, offsetX: screenPoint.x - worldPoint.x * scale, offsetY: screenPoint.y - worldPoint.y * scale };
       renderAll();
     }
 
     function updateCanvasSize() {
       const rect = viewport.getBoundingClientRect();
-      state.canvasSize = {
-        width: Math.max(320, Math.floor(rect.width)),
-        height: Math.max(220, Math.floor(rect.height)),
-      };
+      state.canvasSize = { width: Math.max(320, Math.floor(rect.width)), height: Math.max(220, Math.floor(rect.height)) };
       const dpr = window.devicePixelRatio || 1;
       canvas.width = state.canvasSize.width * dpr;
       canvas.height = state.canvasSize.height * dpr;
@@ -515,7 +810,6 @@
       targetCtx.clearRect(0, 0, state.canvasSize.width, state.canvasSize.height);
       targetCtx.fillStyle = scene.backgroundColor;
       targetCtx.fillRect(backgroundRect.x, backgroundRect.y, backgroundRect.w, backgroundRect.h);
-
       for (const object of scene.objects) {
         if (object.type === "brush") drawBrush(targetCtx, object);
         if (object.type === "line") drawLine(targetCtx, object);
@@ -532,7 +826,6 @@
           }
         }
       }
-
       if (options.preview) {
         const preview = options.preview;
         if (preview.type === "brush") drawBrush(targetCtx, preview);
@@ -540,7 +833,6 @@
         if (preview.type === "arrow") drawArrow(targetCtx, preview);
         if (preview.type === "shape") drawShape(targetCtx, preview);
       }
-
       if (options.selectedId) {
         const selected = scene.objects.find((obj) => obj.id === options.selectedId);
         if (selected) {
@@ -562,24 +854,16 @@
         w: state.canvasSize.width / state.view.scale,
         h: state.canvasSize.height / state.view.scale,
       };
-
       ctx.clearRect(0, 0, state.canvasSize.width, state.canvasSize.height);
       ctx.save();
       ctx.translate(state.view.offsetX, state.view.offsetY);
       ctx.scale(state.view.scale, state.view.scale);
-      drawScene(ctx, state.scene, {
-        preview: state.draft,
-        selectedId: state.selectedId,
-        backgroundRect,
-      });
+      drawScene(ctx, state.scene, { preview: state.draft, selectedId: state.selectedId, backgroundRect });
       ctx.restore();
     }
 
     function renderTextEditor() {
-      if (!state.editingText) {
-        textEditor.style.display = "none";
-        return;
-      }
+      if (!state.editingText) { textEditor.style.display = "none"; return; }
       const screen = worldToScreen({ x: state.editingText.x, y: state.editingText.y });
       textEditor.style.display = "block";
       textEditor.style.left = `${screen.x}px`;
@@ -641,13 +925,11 @@
       const type = targetType();
       const sel = selectedObject();
       const prefs = activePrefs();
-
       const supportsSize = ["brush", "line", "shape", "arrow", "text", "image"].includes(type);
       const supportsShape = ["brush", "shape"].includes(type);
       const supportsAlpha = ["brush", "line", "shape", "arrow", "text", "image"].includes(type);
       const supportsColour = ["brush", "line", "shape", "arrow", "text", TOOL.BACKGROUND].includes(type);
       const supportsStrokeSolid = type === "shape";
-
       $("attributesSection").style.display = (supportsSize || supportsShape || supportsAlpha || supportsColour || supportsStrokeSolid) ? "flex" : "none";
       $("sizeField").style.display = supportsSize ? "flex" : "none";
       $("shapeField").style.display = supportsShape ? "flex" : "none";
@@ -661,7 +943,11 @@
       const currentAlpha = sel ? (sel.alpha ?? 100) : (prefs.alpha ?? 100);
       const currentStroke = sel?.stroke ?? prefs.stroke ?? 3;
       const currentSolid = sel?.solid ?? prefs.solid ?? true;
-
+      const backgroundRgb = {
+        r: parseInt(state.scene.backgroundColor.slice(1, 3), 16),
+        g: parseInt(state.scene.backgroundColor.slice(3, 5), 16),
+        b: parseInt(state.scene.backgroundColor.slice(5, 7), 16),
+      };
       $("sizeInput").value = currentSize;
       $("alphaInput").value = currentAlpha;
       $("alphaValue").textContent = String(currentAlpha);
@@ -670,16 +956,14 @@
       $("bgR").value = backgroundRgb.r;
       $("bgG").value = backgroundRgb.g;
       $("bgB").value = backgroundRgb.b;
-
       if (supportsShape) renderShapes();
       if (supportsColour) renderColours();
     }
 
-    function renderAll() {
-      renderTools();
-      renderAttributes();
-      renderCanvas();
-      renderTextEditor();
+    function renderAll() { renderTools(); renderAttributes(); renderCanvas(); renderTextEditor(); }
+
+    function updateToolPreference(tool, patch) {
+      state.toolPrefs[tool] = { ...(state.toolPrefs[tool] || {}), ...patch };
     }
 
     function applyAttributesPatch(patch) {
@@ -692,7 +976,6 @@
         pushHistory(nextScene);
         return;
       }
-
       if (state.activeTool === TOOL.BACKGROUND && patch.color) {
         const nextScene = clone(state.scene);
         nextScene.backgroundColor = patch.color;
@@ -700,7 +983,6 @@
         pushHistory(nextScene);
         return;
       }
-
       if (state.activeTool) {
         updateToolPreference(state.activeTool, patch);
         renderAll();
@@ -729,14 +1011,8 @@
       }
       const nextScene = clone(state.scene);
       const newTextObject = {
-        id: makeId("text"),
-        type: "text",
-        x: state.editingText.x,
-        y: state.editingText.y,
-        text: state.editingText.text,
-        size: state.editingText.size,
-        color: state.editingText.color,
-        alpha: state.editingText.alpha,
+        id: makeId("text"), type: "text", x: state.editingText.x, y: state.editingText.y,
+        text: state.editingText.text, size: state.editingText.size, color: state.editingText.color, alpha: state.editingText.alpha,
       };
       nextScene.objects.push(newTextObject);
       pushHistory(nextScene);
@@ -746,10 +1022,7 @@
     }
 
     function toggleTool(tool) {
-      if (state.activeTool === TOOL.TEXT && state.editingText) {
-        commitEditingText();
-      }
-
+      if (state.activeTool === TOOL.TEXT && state.editingText) commitEditingText();
       if (tool === "select") {
         const next = !state.selectMode;
         state.selectMode = next;
@@ -760,7 +1033,6 @@
         renderAll();
         return;
       }
-
       const nextTool = state.activeTool === tool ? null : tool;
       state.activeTool = nextTool;
       state.selectMode = false;
@@ -783,8 +1055,139 @@
       renderAll();
     }
 
-    function pointerScreenPoint(event) {
-      return canvasPointFromEvent(event, canvas);
+    function addImage(dataUrl) {
+      const img = new Image();
+      img.onload = () => {
+        const maxW = state.canvasSize.width * 0.5 / state.view.scale;
+        const maxH = state.canvasSize.height * 0.4 / state.view.scale;
+        const scale = Math.min(maxW / img.width, maxH / img.height, 1);
+        const width = Math.max(40, img.width * scale);
+        const height = Math.max(40, img.height * scale);
+        const center = screenToWorld({ x: state.canvasSize.width / 2, y: state.canvasSize.height / 2 });
+        const nextScene = clone(state.scene);
+        const object = { id: makeId("img"), type: "image", dataUrl, x: center.x - width / 2, y: center.y - height / 2, width, height, alpha: 100 };
+        nextScene.objects.push(object);
+        pushHistory(nextScene);
+        state.selectedId = object.id;
+        state.toolPrefs.image = { ...state.toolPrefs.image, scalePercent: 100, alpha: 100 };
+        renderAll();
+      };
+      img.src = dataUrl;
+    }
+
+    function handleImageUpload(event) {
+      const file = event.target.files?.[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => addImage(reader.result);
+      reader.readAsDataURL(file);
+      event.target.value = "";
+    }
+
+    async function pasteImageFromClipboard() {
+      if (!navigator.clipboard?.read) return;
+      try {
+        const items = await navigator.clipboard.read();
+        const imageItem = items.find((item) => item.types.some((type) => type.startsWith("image/")));
+        if (!imageItem) return;
+        const imageType = imageItem.types.find((type) => type.startsWith("image/"));
+        const blob = await imageItem.getType(imageType);
+        const reader = new FileReader();
+        reader.onload = () => addImage(reader.result);
+        reader.readAsDataURL(blob);
+      } catch {
+        // ignore clipboard failure
+      }
+    }
+
+    function resizeSelectedImage(percent) {
+      const sel = selectedObject();
+      if (!sel || sel.type !== "image") return;
+      const currentPercent = state.toolPrefs.image.scalePercent || 100;
+      const ratio = percent / currentPercent;
+      const nextScene = clone(state.scene);
+      const target = nextScene.objects.find((obj) => obj.id === state.selectedId);
+      if (!target) return;
+      const cx = target.x + target.width / 2;
+      const cy = target.y + target.height / 2;
+      target.width = Math.max(20, target.width * ratio);
+      target.height = Math.max(20, target.height * ratio);
+      target.x = cx - target.width / 2;
+      target.y = cy - target.height / 2;
+      state.toolPrefs.image = { ...state.toolPrefs.image, scalePercent: percent };
+      pushHistory(nextScene);
+    }
+
+    function buildShapeObject(start, end) {
+      const prefs = activePrefs();
+      const usePreset = distance(start, end) < 4;
+      let rect;
+      if (usePreset) {
+        const size = prefs.size || 90;
+        rect = { x: start.x - size / 2, y: start.y - size / 2, w: size, h: size };
+      } else {
+        rect = rectFromPoints(start, end);
+        if (["circle", "square", "hexagon"].includes(prefs.shape)) {
+          const side = Math.max(rect.w, rect.h);
+          rect.w = side; rect.h = side;
+        }
+      }
+      return {
+        id: makeId("shape"), type: "shape", x: rect.x, y: rect.y, w: rect.w, h: rect.h,
+        shape: prefs.shape, color: prefs.color, stroke: prefs.stroke || 3, solid: prefs.solid ?? true, alpha: prefs.alpha ?? 100,
+      };
+    }
+
+    function renderExportCanvas() {
+      const exportCanvas = document.createElement("canvas");
+      exportCanvas.width = state.canvasSize.width;
+      exportCanvas.height = state.canvasSize.height;
+      const exportCtx = exportCanvas.getContext("2d");
+      const exportScene = clone(state.scene);
+      if (state.editingText && state.editingText.text.trim()) {
+        exportScene.objects.push({
+          id: "text_preview_export", type: "text", x: state.editingText.x, y: state.editingText.y,
+          text: state.editingText.text, size: state.editingText.size, color: state.editingText.color, alpha: state.editingText.alpha,
+        });
+      }
+      const backgroundRect = {
+        x: -state.view.offsetX / state.view.scale,
+        y: -state.view.offsetY / state.view.scale,
+        w: state.canvasSize.width / state.view.scale,
+        h: state.canvasSize.height / state.view.scale,
+      };
+      exportCtx.save();
+      exportCtx.translate(state.view.offsetX, state.view.offsetY);
+      exportCtx.scale(state.view.scale, state.view.scale);
+      drawScene(exportCtx, exportScene, { backgroundRect });
+      exportCtx.restore();
+      return exportCanvas;
+    }
+
+    function saveCanvas() {
+      try {
+        const exportCanvas = renderExportCanvas();
+        const url = exportCanvas.toDataURL("image/png");
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = `eek-a-sketch_${new Date().toISOString().replace(/[:.]/g, "-")}.png`;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+      } catch {
+        // ignore
+      }
+    }
+
+    async function copyCanvas() {
+      try {
+        const exportCanvas = renderExportCanvas();
+        const blob = await new Promise((resolve) => exportCanvas.toBlob(resolve, "image/png"));
+        if (!blob || !navigator.clipboard?.write || !window.ClipboardItem) return;
+        await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
+      } catch {
+        // ignore
+      }
     }
 
     function onPointerDown(event) {
@@ -800,7 +1203,7 @@
         return;
       }
 
-      const screenPoint = pointerScreenPoint(event);
+      const screenPoint = canvasPointFromEvent(event, canvas);
       const worldPoint = screenToWorld(screenPoint);
 
       if (state.activeTool === TOOL.TEXT) {
@@ -827,7 +1230,6 @@
       }
 
       const prefs = activePrefs();
-
       if (state.activeTool === TOOL.BRUSH) {
         const points = [worldPoint];
         state.interaction = { kind: "brush", points };
@@ -836,7 +1238,6 @@
         renderCanvas();
         return;
       }
-
       if (state.activeTool === TOOL.SHAPE) {
         state.interaction = { kind: "shape", start: worldPoint };
         state.draft = buildShapeObject(worldPoint, worldPoint);
@@ -844,20 +1245,13 @@
         renderCanvas();
         return;
       }
-
       if (state.activeTool === TOOL.LINE || state.activeTool === TOOL.ARROW_ONE || state.activeTool === TOOL.ARROW_TWO) {
         state.interaction = { kind: "dragLine", start: worldPoint, tool: state.activeTool };
         state.draft = state.activeTool === TOOL.LINE
           ? { type: "line", start: worldPoint, end: worldPoint, color: prefs.color, size: prefs.size, alpha: prefs.alpha }
           : {
-              type: "arrow",
-              start: worldPoint,
-              end: worldPoint,
-              color: prefs.color,
-              size: prefs.size,
-              alpha: prefs.alpha,
-              startHead: state.activeTool === TOOL.ARROW_TWO,
-              endHead: true,
+              type: "arrow", start: worldPoint, end: worldPoint, color: prefs.color, size: prefs.size, alpha: prefs.alpha,
+              startHead: state.activeTool === TOOL.ARROW_TWO, endHead: true,
             };
         canvas.setPointerCapture?.(event.pointerId);
         renderCanvas();
@@ -870,22 +1264,14 @@
 
     function onPointerMove(event) {
       if (!state.interaction) return;
-
-      if (state.touchMap.has(event.pointerId)) {
-        state.touchMap.set(event.pointerId, { x: event.clientX, y: event.clientY });
-      }
-
+      if (state.touchMap.has(event.pointerId)) state.touchMap.set(event.pointerId, { x: event.clientX, y: event.clientY });
       if (state.interaction.kind === "pinchPan" && state.pinchState && state.touchMap.size >= 2) {
         const currentDistance = getTwoTouchDistance(state.touchMap);
         const values = Array.from(state.touchMap.values());
         const centerClient = midpoint(values[0], values[1]);
         const rect = canvas.getBoundingClientRect();
         const screenCenter = { x: centerClient.x - rect.left, y: centerClient.y - rect.top };
-        const newScale = clamp(
-          state.pinchState.startScale * (currentDistance / Math.max(1, state.pinchState.startDistance)),
-          0.25,
-          6
-        );
+        const newScale = clamp(state.pinchState.startScale * (currentDistance / Math.max(1, state.pinchState.startDistance)), 0.25, 6);
         const worldAtCenter = {
           x: (screenCenter.x - state.pinchState.startOffsetX) / state.pinchState.startScale,
           y: (screenCenter.y - state.pinchState.startOffsetY) / state.pinchState.startScale,
@@ -899,7 +1285,7 @@
         return;
       }
 
-      const screenPoint = pointerScreenPoint(event);
+      const screenPoint = canvasPointFromEvent(event, canvas);
       const worldPoint = screenToWorld(screenPoint);
 
       if (state.interaction.kind === "pan") {
@@ -911,7 +1297,6 @@
         renderAll();
         return;
       }
-
       if (state.interaction.kind === "selectMove") {
         const dx = worldPoint.x - state.interaction.startWorld.x;
         const dy = worldPoint.y - state.interaction.startWorld.y;
@@ -926,33 +1311,21 @@
       }
 
       const prefs = activePrefs();
-
       if (state.interaction.kind === "brush") {
         state.interaction.points = [...state.interaction.points, worldPoint];
         state.draft = { type: "brush", points: state.interaction.points, size: prefs.size, shape: prefs.shape, color: prefs.color, alpha: prefs.alpha };
         renderCanvas();
         return;
       }
-
       if (state.interaction.kind === "shape") {
         state.draft = buildShapeObject(state.interaction.start, worldPoint);
         renderCanvas();
         return;
       }
-
       if (state.interaction.kind === "dragLine") {
         state.draft = state.interaction.tool === TOOL.LINE
           ? { type: "line", start: state.interaction.start, end: worldPoint, color: prefs.color, size: prefs.size, alpha: prefs.alpha }
-          : {
-              type: "arrow",
-              start: state.interaction.start,
-              end: worldPoint,
-              color: prefs.color,
-              size: prefs.size,
-              alpha: prefs.alpha,
-              startHead: state.interaction.tool === TOOL.ARROW_TWO,
-              endHead: true,
-            };
+          : { type: "arrow", start: state.interaction.start, end: worldPoint, color: prefs.color, size: prefs.size, alpha: prefs.alpha, startHead: state.interaction.tool === TOOL.ARROW_TWO, endHead: true };
         renderCanvas();
       }
     }
@@ -960,13 +1333,9 @@
     function onPointerUp(event) {
       state.touchMap.delete(event.pointerId);
       if (state.touchMap.size < 2) state.pinchState = null;
+      if (!state.interaction || state.interaction.kind === "pinchPan") { state.interaction = null; return; }
 
-      if (!state.interaction || state.interaction.kind === "pinchPan") {
-        state.interaction = null;
-        return;
-      }
-
-      const screenPoint = pointerScreenPoint(event);
+      const screenPoint = canvasPointFromEvent(event, canvas);
       const worldPoint = screenToWorld(screenPoint);
       const prefs = activePrefs();
 
@@ -975,25 +1344,15 @@
         canvas.releasePointerCapture?.(event.pointerId);
         return;
       }
-
       if (state.interaction.kind === "selectMove") {
         pushHistory(clone(state.scene));
         state.interaction = null;
         canvas.releasePointerCapture?.(event.pointerId);
         return;
       }
-
       if (state.interaction.kind === "brush") {
         const nextScene = clone(state.scene);
-        const newBrush = {
-          id: makeId("brush"),
-          type: "brush",
-          points: state.interaction.points.length ? state.interaction.points : [worldPoint],
-          size: prefs.size,
-          shape: prefs.shape,
-          color: prefs.color,
-          alpha: prefs.alpha,
-        };
+        const newBrush = { id: makeId("brush"), type: "brush", points: state.interaction.points.length ? state.interaction.points : [worldPoint], size: prefs.size, shape: prefs.shape, color: prefs.color, alpha: prefs.alpha };
         nextScene.objects.push(newBrush);
         pushHistory(nextScene);
         state.selectedId = newBrush.id;
@@ -1003,7 +1362,6 @@
         renderAll();
         return;
       }
-
       if (state.interaction.kind === "shape") {
         const nextScene = clone(state.scene);
         const newShape = buildShapeObject(state.interaction.start, worldPoint);
@@ -1016,30 +1374,11 @@
         renderAll();
         return;
       }
-
       if (state.interaction.kind === "dragLine") {
         const nextScene = clone(state.scene);
         const object = state.interaction.tool === TOOL.LINE
-          ? {
-              id: makeId("line"),
-              type: "line",
-              start: state.interaction.start,
-              end: worldPoint,
-              color: prefs.color,
-              size: prefs.size,
-              alpha: prefs.alpha,
-            }
-          : {
-              id: makeId("arrow"),
-              type: "arrow",
-              start: state.interaction.start,
-              end: worldPoint,
-              color: prefs.color,
-              size: prefs.size,
-              alpha: prefs.alpha,
-              startHead: state.interaction.tool === TOOL.ARROW_TWO,
-              endHead: true,
-            };
+          ? { id: makeId("line"), type: "line", start: state.interaction.start, end: worldPoint, color: prefs.color, size: prefs.size, alpha: prefs.alpha }
+          : { id: makeId("arrow"), type: "arrow", start: state.interaction.start, end: worldPoint, color: prefs.color, size: prefs.size, alpha: prefs.alpha, startHead: state.interaction.tool === TOOL.ARROW_TWO, endHead: true };
         nextScene.objects.push(object);
         pushHistory(nextScene);
         state.selectedId = object.id;
@@ -1050,18 +1389,9 @@
       }
     }
 
-    function renderAndFocusText() {
-      renderAll();
-      if (state.activeTool === TOOL.TEXT && state.editingText) {
-        requestAnimationFrame(() => textEditor.focus());
-      }
-    }
-
     textEditor.addEventListener("input", () => {
-      if (!state.editingText) return;
-      state.editingText.text = textEditor.value;
+      if (state.editingText) state.editingText.text = textEditor.value;
     });
-
     textEditor.addEventListener("blur", () => {
       if (state.activeTool === TOOL.TEXT) {
         setTimeout(() => {
@@ -1072,8 +1402,20 @@
       }
     });
 
-    $("undoBtn").addEventListener("click", undo);
-    $("redoBtn").addEventListener("click", redo);
+    $("undoBtn").addEventListener("click", () => {
+      if (state.historyIndex === 0) return;
+      state.historyIndex -= 1;
+      state.scene = clone(state.history[state.historyIndex]);
+      state.draft = null; state.interaction = null; state.editingText = null; state.selectedId = null;
+      renderAll();
+    });
+    $("redoBtn").addEventListener("click", () => {
+      if (state.historyIndex >= state.history.length - 1) return;
+      state.historyIndex += 1;
+      state.scene = clone(state.history[state.historyIndex]);
+      state.draft = null; state.interaction = null; state.editingText = null; state.selectedId = null;
+      renderAll();
+    });
     $("uploadBtn").addEventListener("click", () => fileInput.click());
     $("pasteBtn").addEventListener("click", pasteImageFromClipboard);
     $("saveBtn").addEventListener("click", saveCanvas);
@@ -1084,15 +1426,17 @@
     fileInput.addEventListener("change", handleImageUpload);
 
     function bindStepper(inputId, upId, downId, min, max, apply) {
-      const input = $(inputId);
-      const up = $(upId);
-      const down = $(downId);
+      const input = $(inputId), up = $(upId), down = $(downId);
       input.addEventListener("change", () => apply(clamp(Number(input.value) || 0, min, max)));
       up.addEventListener("click", () => apply(clamp((Number(input.value) || 0) + 1, min, max)));
       down.addEventListener("click", () => apply(clamp((Number(input.value) || 0) - 1, min, max)));
     }
 
-    bindStepper("sizeInput", "sizeUp", "sizeDown", 1, 300, (value) => applyAttributesPatch({ size: value }));
+    bindStepper("sizeInput", "sizeUp", "sizeDown", 1, 300, (value) => {
+      const sel = selectedObject();
+      if (sel && sel.type === "image") resizeSelectedImage(value);
+      else applyAttributesPatch({ size: value });
+    });
     bindStepper("strokeInput", "strokeUp", "strokeDown", 0, 60, (value) => applyAttributesPatch({ stroke: value }));
     bindStepper("bgR", "bgRUp", "bgRDown", 0, 255, (value) => applyAttributesPatch({ color: rgbToHex(value, Number($("bgG").value), Number($("bgB").value)) }));
     bindStepper("bgG", "bgGUp", "bgGDown", 0, 255, (value) => applyAttributesPatch({ color: rgbToHex(Number($("bgR").value), value, Number($("bgB").value)) }));
@@ -1116,17 +1460,15 @@
     window.addEventListener("keydown", (event) => {
       if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "z") {
         event.preventDefault();
-        if (event.shiftKey) redo();
-        else undo();
+        if (event.shiftKey) $("redoBtn").click(); else $("undoBtn").click();
       }
       if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "y") {
         event.preventDefault();
-        redo();
+        $("redoBtn").click();
       }
       if (event.key === "Escape") {
-        if (state.activeTool === TOOL.TEXT && state.editingText) {
-          commitEditingText();
-        } else {
+        if (state.activeTool === TOOL.TEXT && state.editingText) commitEditingText();
+        else {
           state.editingText = null;
           state.draft = null;
           state.interaction = null;
@@ -1147,10 +1489,9 @@
       reader.readAsDataURL(file);
     });
 
-    window.addEventListener("resize", updateCanvasSize);
-
     initHistory();
     updateCanvasSize();
+    window.addEventListener("resize", updateCanvasSize);
     renderAll();
   </script>
 </body>
