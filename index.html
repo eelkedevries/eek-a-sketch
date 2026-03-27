@@ -31,6 +31,16 @@
       -webkit-tap-highlight-color: transparent;
     }
 
+    input[type="number"] {
+      appearance: textfield;
+      -moz-appearance: textfield;
+    }
+    input[type="number"]::-webkit-outer-spin-button,
+    input[type="number"]::-webkit-inner-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+
     #app {
       position: relative;
       width: 100vw;
@@ -76,6 +86,193 @@
       overflow: hidden;
     }
 
+    #sidePanel {
+      position: absolute;
+      left: calc(8px + var(--panel-w) + 12px);
+      top: 8px;
+      width: min(320px, calc(100vw - var(--panel-w) - 40px));
+      max-height: calc(100vh - 16px);
+      display: none;
+      flex-direction: column;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--panel);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(8px);
+      z-index: 22;
+      overflow: hidden;
+    }
+    #sidePanel.show { display: flex; }
+
+    .panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--border);
+    }
+    .panel-title {
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .panel-body {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      padding: 10px 12px 12px;
+      overflow: auto;
+    }
+    .panel-toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .panel-toolbar .btn {
+      min-height: 28px;
+      padding: 5px 8px;
+      font-size: 10px;
+    }
+
+    .list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .list-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 8px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: #fff;
+      font-size: 11px;
+    }
+    .list-row.selected {
+      border-color: var(--active);
+      box-shadow: 0 0 0 1px var(--active) inset;
+    }
+    .row-main {
+      min-width: 0;
+      flex: 1 1 auto;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+    }
+    .row-main-text {
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 1px;
+    }
+    .row-title {
+      font-weight: 600;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .row-subtitle {
+      font-size: 10px;
+      color: var(--muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .mini-btn {
+      min-height: 24px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: #fff;
+      color: var(--text);
+      font: inherit;
+      font-size: 10px;
+      padding: 4px 6px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .mini-btn:hover { background: #f8fafc; }
+    .mini-btn.active {
+      background: var(--active);
+      border-color: var(--active);
+      color: #fff;
+    }
+
+    .fold-btn {
+      width: 18px;
+      min-width: 18px;
+      height: 18px;
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      background: #fff;
+      font-size: 10px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+    }
+    .log-children {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      margin-left: 18px;
+      padding-left: 8px;
+      border-left: 1px solid var(--border);
+    }
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 2px 6px;
+      border-radius: 999px;
+      font-size: 9px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+      background: #eef2ff;
+      color: #3730a3;
+      border: 1px solid #c7d2fe;
+      flex: 0 0 auto;
+    }
+    .pill.neutral {
+      background: #f8fafc;
+      color: #475569;
+      border-color: var(--border);
+    }
+    .muted-note {
+      font-size: 10px;
+      color: var(--muted);
+    }
+
+    .popup-menu {
+      position: absolute;
+      z-index: 35;
+      display: none;
+      min-width: 178px;
+      padding: 8px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: rgba(255,255,255,.98);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(8px);
+    }
+    .popup-menu.show { display: block; }
+    .popup-title {
+      margin-bottom: 6px;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
     .divider {
       width: 100%;
       height: 1px;
@@ -98,12 +295,13 @@
       color: var(--muted);
     }
 
-    .grid-2, .grid-3, .grid-5 {
+    .grid-2, .grid-3, .grid-4, .grid-5 {
       display: grid;
       gap: 4px;
     }
     .grid-2 { grid-template-columns: repeat(2, minmax(0,1fr)); }
     .grid-3 { grid-template-columns: repeat(3, minmax(0,1fr)); }
+    .grid-4 { grid-template-columns: repeat(2, minmax(0,1fr)); }
     .grid-5 { grid-template-columns: repeat(5, minmax(0,1fr)); }
 
     .btn, .tool-btn {
@@ -149,7 +347,8 @@
       color: var(--muted);
     }
 
-    .stepper {
+    .stepper,
+    .stepper-single {
       display: flex;
       align-items: stretch;
       border: 1px solid var(--border);
@@ -157,8 +356,10 @@
       overflow: hidden;
       background: #fff;
     }
-    .stepper input[type="number"] {
-      width: 46px;
+    .stepper input[type="number"],
+    .stepper-single input[type="number"] {
+      min-width: 0;
+      flex: 1 1 auto;
       border: 0;
       padding: 6px 4px;
       font-size: 11px;
@@ -179,6 +380,15 @@
       cursor: pointer;
     }
     .stepper-side button + button { border-top: 1px solid var(--border); }
+    .stepper-single button {
+      width: 24px;
+      border: 0;
+      border-left: 1px solid var(--border);
+      background: #fff;
+      font-size: 10px;
+      cursor: pointer;
+      flex: 0 0 auto;
+    }
 
     .slider-row {
       display: flex;
@@ -213,6 +423,29 @@
       gap: 8px;
       font-size: 11px;
     }
+    .checkbox-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0,1fr));
+      gap: 6px;
+    }
+    .checkbox-chip {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      min-height: 28px;
+      padding: 4px 6px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: #fff;
+      font-size: 11px;
+    }
+    .checkbox-chip .target-preview {
+      width: 10px;
+      height: 10px;
+      border-radius: 3px;
+      border: 1px solid rgba(15,23,42,.2);
+      flex: 0 0 auto;
+    }
 
     #textEditor {
       position: absolute;
@@ -225,8 +458,12 @@
       background: rgba(255,255,255,.96);
       outline: none;
       resize: both;
-      font: inherit;
+      font-family: sans-serif;
       display: none;
+      overflow: auto;
+      white-space: pre-wrap;
+      word-break: break-word;
+      line-height: 1.25;
     }
 
     #confirmOverlay {
@@ -255,6 +492,17 @@
       justify-content: flex-end;
       gap: 8px;
     }
+
+    @media (max-width: 720px) {
+      #sidePanel {
+        left: 8px;
+        right: 8px;
+        top: auto;
+        bottom: 8px;
+        width: auto;
+        max-height: 45vh;
+      }
+    }
   </style>
 </head>
 <body>
@@ -262,13 +510,15 @@
     <input id="fileInput" type="file" accept="image/*" hidden />
     <div id="viewport">
       <canvas id="canvas"></canvas>
-      <textarea id="textEditor" placeholder="Type here" rows="2"></textarea>
+      <div id="textEditor" contenteditable="true" spellcheck="false" role="textbox" aria-multiline="true"></div>
 
       <div id="sidebar">
         <div class="section">
-          <div class="grid-2">
+          <div class="grid-4">
             <button id="undoBtn" class="btn">Undo</button>
             <button id="redoBtn" class="btn">Redo</button>
+            <button id="elementsBtn" class="btn">Elements</button>
+            <button id="logBtn" class="btn">Log</button>
           </div>
         </div>
 
@@ -279,33 +529,29 @@
           <div id="toolsGrid" class="grid-2"></div>
         </div>
 
-        <div class="divider"></div>
+        <div id="toolAttributesDivider" class="divider"></div>
 
-        <div id="attributesSection" class="section">
-          <div class="section-title">ATTRIBUTES</div>
-
-          <div id="sizeField" class="field">
-            <div class="field-label">Size</div>
-            <div class="stepper">
-              <input id="sizeInput" type="number" min="1" max="300" />
-              <div class="stepper-side">
-                <button id="sizeUp" type="button">▲</button>
-                <button id="sizeDown" type="button">▼</button>
-              </div>
-            </div>
-          </div>
+        <div id="toolAttributesSection" class="section" style="display:none">
+          <div class="section-title">TOOL ATTRIBUTES</div>
 
           <div id="shapeField" class="field">
             <div class="field-label">Shape</div>
             <div id="shapeGrid" class="grid-2"></div>
           </div>
 
-          <div id="alphaField" class="field">
-            <div class="field-label">Alpha</div>
-            <div class="slider-row">
-              <input id="alphaInput" type="range" min="0" max="100" step="1" />
-              <span id="alphaValue" class="slider-value">100</span>
-            </div>
+          <div id="textStyleField" class="field" style="display:none">
+            <div class="field-label">Typeface</div>
+            <div id="textStyleGrid" class="grid-3"></div>
+          </div>
+
+          <div id="textAlignField" class="field" style="display:none">
+            <div class="field-label">Align</div>
+            <div id="textAlignGrid" class="grid-3"></div>
+          </div>
+
+          <div id="textBoxField" class="field" style="display:none">
+            <div class="field-label">Box</div>
+            <div id="textBoxGrid" class="grid-2"></div>
           </div>
 
           <div id="strokeField" class="field">
@@ -319,14 +565,34 @@
             </div>
           </div>
 
-          <label id="solidField" class="checkbox-row">
-            <input id="solidInput" type="checkbox" />
-            <span>Solid</span>
-          </label>
+          <div id="shapeTargetField" class="field" style="display:none">
+            <div class="field-label">Colour target</div>
+            <div class="checkbox-grid">
+              <label class="checkbox-chip">
+                <input id="fillTargetInput" type="checkbox" />
+                <span class="target-preview" id="fillPreview"></span>
+                <span>Fill</span>
+              </label>
+              <label class="checkbox-chip">
+                <input id="strokeTargetInput" type="checkbox" />
+                <span class="target-preview" id="strokePreview"></span>
+                <span>Stroke</span>
+              </label>
+            </div>
+          </div>
 
-          <div id="colourField" class="field">
-            <div class="field-label">Colour</div>
-            <div id="colourGrid" class="grid-5"></div>
+          <div id="lineArrowField" class="field" style="display:none">
+            <div class="field-label">Arrowheads</div>
+            <div class="checkbox-grid">
+              <label class="checkbox-chip">
+                <input id="lineStartHeadToolInput" type="checkbox" />
+                <span>Start</span>
+              </label>
+              <label class="checkbox-chip">
+                <input id="lineEndHeadToolInput" type="checkbox" />
+                <span>End</span>
+              </label>
+            </div>
           </div>
 
           <div id="backgroundRgbField" class="grid-3" style="display:none">
@@ -363,6 +629,36 @@
           </div>
         </div>
 
+        <div class="divider"></div>
+
+        <div id="attributesSection" class="section">
+          <div class="section-title">GENERAL ATTRIBUTES</div>
+
+          <div id="sizeField" class="field">
+            <div class="field-label">Size</div>
+            <div class="stepper">
+              <input id="sizeInput" type="number" min="1" max="300" />
+              <div class="stepper-side">
+                <button id="sizeUp" type="button">▲</button>
+                <button id="sizeDown" type="button">▼</button>
+              </div>
+            </div>
+          </div>
+
+          <div id="alphaField" class="field">
+            <div class="field-label">Alpha</div>
+            <div class="slider-row">
+              <input id="alphaInput" type="range" min="0" max="100" step="1" />
+              <span id="alphaValue" class="slider-value">100</span>
+            </div>
+          </div>
+
+          <div id="colourField" class="field">
+            <div class="field-label">Colour</div>
+            <div id="colourGrid" class="grid-5"></div>
+          </div>
+        </div>
+
         <div style="margin-top:auto"></div>
         <div class="divider"></div>
 
@@ -379,6 +675,15 @@
           </div>
         </div>
       </div>
+
+      <div id="sidePanel">
+        <div class="panel-header">
+          <div id="sidePanelTitle" class="panel-title">Panel</div>
+          <button id="closePanelBtn" class="mini-btn" type="button">Close</button>
+        </div>
+        <div id="sidePanelBody" class="panel-body"></div>
+      </div>
+
     </div>
 
     <div id="confirmOverlay">
@@ -396,30 +701,41 @@
   <script>
     const TOOL = {
       BRUSH: "brush",
+      ERASER: "eraser",
       LINE: "line",
       SHAPE: "shape",
+      CUT: "cut",
       ARROW_ONE: "arrowOne",
       ARROW_TWO: "arrowTwo",
       TEXT: "text",
       BACKGROUND: "background",
+      SELECT: "select",
+      MULTI_SELECT: "multiSelect",
+      GROUP: "group",
     };
 
     const TOOL_ORDER = [
-      "select",
+      TOOL.SELECT,
+      TOOL.MULTI_SELECT,
+      TOOL.GROUP,
       TOOL.BRUSH,
+      TOOL.ERASER,
       TOOL.LINE,
       TOOL.SHAPE,
-      TOOL.ARROW_ONE,
-      TOOL.ARROW_TWO,
+      TOOL.CUT,
       TOOL.TEXT,
       TOOL.BACKGROUND,
     ];
 
     const TOOL_LABEL = {
-      select: "Select",
+      [TOOL.SELECT]: "Select",
+      [TOOL.MULTI_SELECT]: "Multi-select",
+      [TOOL.GROUP]: "Group",
       [TOOL.BRUSH]: "Brush",
+      [TOOL.ERASER]: "Eraser",
       [TOOL.LINE]: "Line",
       [TOOL.SHAPE]: "Shape",
+      [TOOL.CUT]: "Cut",
       [TOOL.ARROW_ONE]: "Arrow one-way",
       [TOOL.ARROW_TWO]: "Arrow two-way",
       [TOOL.TEXT]: "Text",
@@ -454,6 +770,318 @@
     function rgbToHex(r, g, b) {
       const toHex = (v) => clamp(Number(v) || 0, 0, 255).toString(16).padStart(2, "0");
       return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+    }
+    function uniqueIds(ids) { return [...new Set(ids.filter(Boolean))]; }
+    function unionRect(a, b) {
+      if (!a) return b;
+      if (!b) return a;
+      const x = Math.min(a.x, b.x);
+      const y = Math.min(a.y, b.y);
+      const right = Math.max(a.x + a.w, b.x + b.w);
+      const bottom = Math.max(a.y + a.h, b.y + b.h);
+      return { x, y, w: right - x, h: bottom - y };
+    }
+    function commonValue(values) {
+      const filtered = values.filter((value) => value !== undefined && value !== null);
+      if (!filtered.length) return undefined;
+      return filtered.every((value) => value === filtered[0]) ? filtered[0] : undefined;
+    }
+    function titleCase(text) { return text.charAt(0).toUpperCase() + text.slice(1); }
+
+    function getTextPaddingForSize(size) {
+      return Math.max(6, Math.round((size || 16) * 0.35));
+    }
+
+    function normalizeFontStyle(style) {
+      return style === "italic" || style === "bold" ? style : "regular";
+    }
+
+    function appendTextRun(runs, text, fontStyle) {
+      if (!text) return;
+      const normalizedStyle = normalizeFontStyle(fontStyle);
+      const last = runs[runs.length - 1];
+      if (last && last.fontStyle === normalizedStyle) last.text += text;
+      else runs.push({ text, fontStyle: normalizedStyle });
+    }
+
+    function normalizeTextRuns(text, textRuns, defaultStyle = "regular") {
+      const plainText = String(text || "");
+      const runs = [];
+      if (Array.isArray(textRuns)) {
+        textRuns.forEach((run) => appendTextRun(runs, String(run?.text || ""), run?.fontStyle || defaultStyle));
+      }
+      if (runs.map((run) => run.text).join("") !== plainText) {
+        const fallback = [];
+        appendTextRun(fallback, plainText, defaultStyle);
+        return fallback;
+      }
+      if (!runs.length && plainText) appendTextRun(runs, plainText, defaultStyle);
+      return runs;
+    }
+
+    function getTextRuns(object) {
+      return normalizeTextRuns(object.text, object.textRuns, object.fontStyle);
+    }
+
+    function splitTextRunsIntoLines(runs) {
+      const lines = [[]];
+      runs.forEach((run) => {
+        const parts = String(run.text || "").split("\n");
+        parts.forEach((part, index) => {
+          if (part) appendTextRun(lines[lines.length - 1], part, run.fontStyle);
+          if (index < parts.length - 1) lines.push([]);
+        });
+      });
+      return lines.length ? lines : [[]];
+    }
+
+    function getTextFontString(object, scale = 1, fontStyle = object.fontStyle) {
+      const size = Math.max(1, object.size || 16) * scale;
+      let prefix = "";
+      const normalizedStyle = normalizeFontStyle(fontStyle);
+      if (normalizedStyle === "italic") prefix = "italic ";
+      else if (normalizedStyle === "bold") prefix = "bold ";
+      return `${prefix}${size}px sans-serif`;
+    }
+
+    function measureTextContent(object) {
+      const measureCanvas = measureTextContent.canvas || (measureTextContent.canvas = document.createElement("canvas"));
+      const measureCtx = measureCanvas.getContext("2d");
+      const runs = getTextRuns(object);
+      const lines = splitTextRunsIntoLines(runs).map((segments) => {
+        if (!segments.length) {
+          measureCtx.font = getTextFontString(object);
+          return { segments: [], width: Math.ceil(measureCtx.measureText(" ").width) };
+        }
+        let width = 0;
+        segments.forEach((segment) => {
+          measureCtx.font = getTextFontString(object, 1, segment.fontStyle);
+          width += measureCtx.measureText(segment.text || " ").width;
+        });
+        return { segments, width: Math.ceil(width) };
+      });
+      const lineHeight = Math.max(1, (object.size || 16) * 1.25);
+      const textWidth = Math.max(1, ...lines.map((line) => line.width || 1));
+      const textHeight = Math.max(lineHeight, lines.length * lineHeight);
+      const padding = getTextPaddingForSize(object.size || 16);
+      return {
+        runs,
+        lines,
+        lineHeight,
+        textWidth,
+        textHeight,
+        padding,
+        minWidth: Math.max(textWidth + padding * 2, (object.size || 16) * 2),
+        minHeight: Math.max(textHeight + padding * 2, lineHeight + padding * 2),
+      };
+    }
+
+    function ensureTextBoxFitsContent(object) {
+      const next = clone(object);
+      const metrics = measureTextContent(next);
+      next.width = Math.max(Number(next.width) || 0, metrics.minWidth);
+      next.height = Math.max(Number(next.height) || 0, metrics.minHeight);
+      return next;
+    }
+
+    function normalizeTextObject(object) {
+      const next = clone(object);
+      next.text = String(next.text || "");
+      next.color = next.color || "#000000";
+      next.fontStyle = normalizeFontStyle(next.fontStyle);
+      next.textRuns = normalizeTextRuns(next.text, next.textRuns, next.fontStyle);
+      if (typeof next.align !== "string") next.align = "left";
+      if (typeof next.boxed !== "boolean") next.boxed = false;
+      next.boxFillColor = next.boxFillColor || "#ffffff";
+      next.boxStrokeColor = next.boxStrokeColor || "#000000";
+      if (typeof next.boxStroke !== "number") next.boxStroke = 2;
+      if (typeof next.width !== "number") next.width = 180;
+      if (typeof next.height !== "number") next.height = 70;
+      return ensureTextBoxFitsContent(next);
+    }
+
+    function applyShapeColourPatchToShape(patchColour) {
+      const patch = {};
+      if (state.shapeColourTargets.fill) patch.fillColor = patchColour;
+      if (state.shapeColourTargets.stroke) patch.strokeColor = patchColour;
+      return patch;
+    }
+
+    function applyShapeColourPatchToTextBox(patchColour) {
+      const patch = {};
+      if (state.shapeColourTargets.fill) patch.boxFillColor = patchColour;
+      if (state.shapeColourTargets.stroke) patch.boxStrokeColor = patchColour;
+      return patch;
+    }
+
+    function setSharedColour(colour) {
+      if (!colour) return;
+      state.sharedColour = colour;
+      [TOOL.BRUSH, TOOL.LINE, TOOL.ARROW_ONE, TOOL.ARROW_TWO, TOOL.TEXT].forEach((tool) => {
+        updateToolPreference(tool, { color: colour });
+      });
+    }
+
+    function syncToolPreferenceColour(tool, colour) {
+      if (!tool || !colour || tool === TOOL.BACKGROUND) return;
+      if (tool === TOOL.SHAPE) {
+        const patch = applyShapeColourPatchToShape(colour);
+        if (Object.keys(patch).length) updateToolPreference(TOOL.SHAPE, patch);
+        return;
+      }
+      if (tool === TOOL.TEXT) {
+        updateToolPreference(TOOL.TEXT, { color: colour });
+        if (state.toolPrefs[TOOL.TEXT].boxed) {
+          const patch = applyShapeColourPatchToTextBox(colour);
+          if (Object.keys(patch).length) updateToolPreference(TOOL.TEXT, patch);
+        }
+        return;
+      }
+      updateToolPreference(tool, { color: colour });
+    }
+
+    function syncSelectionColourPreferences(selection, colour) {
+      if (!selection.length || !colour) return;
+      if (selection.every((object) => object.type === "shape")) {
+        const patch = applyShapeColourPatchToShape(colour);
+        if (Object.keys(patch).length) updateToolPreference(TOOL.SHAPE, patch);
+        return;
+      }
+      if (selection.every((object) => object.type === "text")) {
+        updateToolPreference(TOOL.TEXT, { color: colour });
+        if (selection.every((object) => !!object.boxed)) {
+          const patch = applyShapeColourPatchToTextBox(colour);
+          if (Object.keys(patch).length) updateToolPreference(TOOL.TEXT, patch);
+        }
+      }
+    }
+
+    function syncEditingTextColour(colour = state.sharedColour) {
+      if (!state.editingText || !colour) return;
+      if (state.editingText.boxed && (state.shapeColourTargets.fill || state.shapeColourTargets.stroke)) {
+        const patch = applyShapeColourPatchToTextBox(colour);
+        if (Object.keys(patch).length) {
+          state.editingText = updateObjectAttributes({ type: "text", ...state.editingText }, patch);
+          return;
+        }
+      }
+      state.editingText = updateObjectAttributes({ type: "text", ...state.editingText }, { color: colour });
+    }
+
+    function applySharedColourToCurrentContext() {
+      if (selectedObjects().length || !state.sharedColour || !state.activeTool) return;
+      syncToolPreferenceColour(state.activeTool, state.sharedColour);
+      if (state.activeTool === TOOL.TEXT) syncEditingTextColour(state.sharedColour);
+    }
+
+    function rememberExplicitColourChoice(colour, selection) {
+      if (!colour) return;
+      setSharedColour(colour);
+      if (selection.length) {
+        syncSelectionColourPreferences(selection, colour);
+        return;
+      }
+      syncToolPreferenceColour(state.activeTool, colour);
+      if (state.activeTool === TOOL.TEXT) syncEditingTextColour(colour);
+    }
+
+    function objectUsesColourTargets(object) {
+      return object.type === "shape" || (object.type === "text" && !!object.boxed);
+    }
+
+    function applyTargetedColourPatch(object, patchColour) {
+      if (object.type === "shape") return applyShapeColourPatchToShape(patchColour);
+      if (object.type === "text" && object.boxed && (state.shapeColourTargets.fill || state.shapeColourTargets.stroke)) {
+        return applyShapeColourPatchToTextBox(patchColour);
+      }
+      return { color: patchColour };
+    }
+
+    function currentColourTargetValues(selection) {
+      if (selection.length) {
+        if (selection.every((object) => object.type === "shape")) {
+          return {
+            fillColour: commonValue(selection.map((object) => object.fillColor)) ?? selection[0].fillColor,
+            strokeColour: commonValue(selection.map((object) => object.strokeColor)) ?? selection[0].strokeColor,
+          };
+        }
+        if (selection.every((object) => object.type === "text" && object.boxed)) {
+          return {
+            fillColour: commonValue(selection.map((object) => object.boxFillColor)) ?? selection[0].boxFillColor,
+            strokeColour: commonValue(selection.map((object) => object.boxStrokeColor)) ?? selection[0].boxStrokeColor,
+          };
+        }
+      }
+      if (state.activeTool === TOOL.SHAPE) {
+        return { fillColour: state.toolPrefs[TOOL.SHAPE].fillColor, strokeColour: state.toolPrefs[TOOL.SHAPE].strokeColor };
+      }
+      if (state.activeTool === TOOL.TEXT && state.toolPrefs[TOOL.TEXT].boxed) {
+        return { fillColour: state.toolPrefs[TOOL.TEXT].boxFillColor, strokeColour: state.toolPrefs[TOOL.TEXT].boxStrokeColor };
+      }
+      return { fillColour: "#000000", strokeColour: "#000000" };
+    }
+
+    function updateTextEditorBoxMetricsFromDom() {
+      if (!state.editingText) return;
+      const scale = Math.max(0.0001, state.view.scale || 1);
+      state.editingText.width = Math.max(40, textEditor.offsetWidth / scale);
+      state.editingText.height = Math.max(24, textEditor.offsetHeight / scale);
+    }
+
+    function updateTextEditorVisuals() {
+      if (!state.editingText) return;
+      const nextText = { ...state.editingText };
+      const metrics = measureTextContent(nextText);
+      const scale = Math.max(0.0001, state.view.scale || 1);
+      const innerHeightPx = Math.max(1, (nextText.height || 0) * scale);
+      const contentHeightPx = metrics.textHeight * scale;
+      const extra = Math.max(0, innerHeightPx - contentHeightPx);
+      const verticalPad = Math.max(4, extra / 2);
+      const horizontalPad = Math.max(6, metrics.padding * scale);
+      textEditor.style.paddingTop = `${verticalPad}px`;
+      textEditor.style.paddingBottom = `${verticalPad}px`;
+      textEditor.style.paddingLeft = `${horizontalPad}px`;
+      textEditor.style.paddingRight = `${horizontalPad}px`;
+      textEditor.style.textAlign = nextText.align || "left";
+      textEditor.style.fontSize = `${Math.max(1, nextText.size || 16) * scale}px`;
+      textEditor.style.fontFamily = "sans-serif";
+      textEditor.style.lineHeight = `${Math.max(1, (nextText.size || 16) * 1.25) * scale}px`;
+      textEditor.style.fontStyle = nextText.fontStyle === "italic" ? "italic" : "normal";
+      textEditor.style.fontWeight = nextText.fontStyle === "bold" ? "700" : "400";
+      textEditor.style.background = nextText.boxed ? nextText.boxFillColor : "rgba(255,255,255,.96)";
+      textEditor.style.borderColor = nextText.boxed ? nextText.boxStrokeColor : "#111111";
+      textEditor.style.borderWidth = nextText.boxed ? `${Math.max(1, nextText.boxStroke * scale)}px` : "1px";
+      textEditor.style.borderStyle = "solid";
+    }
+
+    function normalizeShapeObject(object) {
+      const next = clone(object);
+      next.fillColor = next.fillColor || next.color || "#000000";
+      next.strokeColor = next.strokeColor || next.color || "#000000";
+      if (typeof next.stroke !== "number") next.stroke = 3;
+      return next;
+    }
+
+    function normalizeObject(object) {
+      if (object.type === "shape") return normalizeShapeObject(object);
+      if (object.type === "text") return normalizeTextObject(object);
+      if (object.type === "brush") {
+        const next = clone(object);
+        next.shape = "circle";
+        if (typeof next.alpha !== "number") next.alpha = 100;
+        if (typeof next.startHead !== "boolean") next.startHead = false;
+        if (typeof next.endHead !== "boolean") next.endHead = false;
+        return next;
+      }
+      if ((object.type === "brush" || object.type === "line" || object.type === "arrow") && typeof object.startHead !== "boolean") object.startHead = false;
+      if ((object.type === "brush" || object.type === "line" || object.type === "arrow") && typeof object.endHead !== "boolean") object.endHead = false;
+      if (object.type === "eraser") {
+        const next = clone(object);
+        next.shape = next.shape || "circle";
+        if (typeof next.alpha !== "number") next.alpha = 100;
+        return next;
+      }
+      return object;
     }
 
     function drawPolygonPath(ctx, cx, cy, rx, ry, sides, rotation = -Math.PI / 2) {
@@ -494,37 +1122,43 @@
       ctx.restore();
     }
 
-    function drawBrush(ctx, object) {
-      const points = object.points || [];
-      if (!points.length) return;
-      if (points.length === 1) {
-        drawStamp(ctx, points[0], object.size, object.shape, object.color, object.alpha);
-        return;
+    function findBrushArrowAnchor(points, fromStart) {
+      if (!points.length) return null;
+      const tip = fromStart ? points[0] : points[points.length - 1];
+      const indexes = fromStart
+        ? [...Array(points.length).keys()].slice(1)
+        : [...Array(points.length).keys()].slice(0, -1).reverse();
+      for (const index of indexes) {
+        if (distance(points[index], tip) > 0.5) return points[index];
       }
-      const spacing = Math.max(1, object.size * 0.18);
-      for (let i = 0; i < points.length - 1; i += 1) {
-        const start = points[i];
-        const end = points[i + 1];
-        const steps = Math.max(1, Math.ceil(distance(start, end) / spacing));
-        for (let s = 0; s <= steps; s += 1) {
-          const t = s / steps;
-          drawStamp(ctx, { x: start.x + (end.x - start.x) * t, y: start.y + (end.y - start.y) * t }, object.size, object.shape, object.color, object.alpha);
-        }
-      }
+      return null;
     }
 
-    function drawLine(ctx, object) {
-      ctx.save();
-      ctx.globalAlpha = getAlpha01(object.alpha);
-      ctx.strokeStyle = object.color;
-      ctx.lineWidth = object.size;
-      ctx.lineCap = "round";
-      ctx.lineJoin = "round";
-      ctx.beginPath();
-      ctx.moveTo(object.start.x, object.start.y);
-      ctx.lineTo(object.end.x, object.end.y);
-      ctx.stroke();
-      ctx.restore();
+    function drawBrush(ctx, object, backgroundColor = state.scene.backgroundColor) {
+      const points = object.points || [];
+      if (!points.length) return;
+      const drawColor = object.type === "eraser" ? backgroundColor : object.color;
+      if (points.length === 1) {
+        drawStamp(ctx, points[0], object.size, object.shape, drawColor, object.alpha);
+      } else {
+        const spacing = Math.max(1, object.size * 0.18);
+        for (let i = 0; i < points.length - 1; i += 1) {
+          const start = points[i];
+          const end = points[i + 1];
+          const steps = Math.max(1, Math.ceil(distance(start, end) / spacing));
+          for (let s = 0; s <= steps; s += 1) {
+            const t = s / steps;
+            drawStamp(ctx, { x: start.x + (end.x - start.x) * t, y: start.y + (end.y - start.y) * t }, object.size, object.shape, drawColor, object.alpha);
+          }
+        }
+      }
+
+      if (object.type === "brush" && points.length >= 2) {
+        const startAnchor = findBrushArrowAnchor(points, true);
+        const endAnchor = findBrushArrowAnchor(points, false);
+        if (object.startHead && startAnchor) drawArrowHead(ctx, startAnchor, points[0], object.size, drawColor, object.alpha);
+        if (object.endHead && endAnchor) drawArrowHead(ctx, endAnchor, points[points.length - 1], object.size, drawColor, object.alpha);
+      }
     }
 
     function getArrowHeadLength(size) { return Math.max(12, size * 3.5); }
@@ -545,76 +1179,117 @@
       ctx.restore();
     }
 
-    function drawArrow(ctx, object) {
+    function drawLine(ctx, object) {
       const dx = object.end.x - object.start.x;
       const dy = object.end.y - object.start.y;
       const length = Math.hypot(dx, dy);
-      if (length === 0) {
-        if (object.endHead) drawArrowHead(ctx, { x: object.start.x - 1, y: object.start.y }, object.end, object.size, object.color, object.alpha);
-        return;
-      }
-      const unitX = dx / length;
-      const unitY = dy / length;
       const headLength = getArrowHeadLength(object.size);
-      const lineStart = object.startHead ? { x: object.start.x + unitX * headLength, y: object.start.y + unitY * headLength } : object.start;
-      const lineEnd = object.endHead ? { x: object.end.x - unitX * headLength, y: object.end.y - unitY * headLength } : object.end;
-      drawLine(ctx, { ...object, start: lineStart, end: lineEnd });
+      let lineStart = object.start;
+      let lineEnd = object.end;
+      if (length > 0) {
+        const unitX = dx / length;
+        const unitY = dy / length;
+        if (object.startHead) lineStart = { x: object.start.x + unitX * headLength, y: object.start.y + unitY * headLength };
+        if (object.endHead) lineEnd = { x: object.end.x - unitX * headLength, y: object.end.y - unitY * headLength };
+      }
+      ctx.save();
+      ctx.globalAlpha = getAlpha01(object.alpha);
+      ctx.strokeStyle = object.color;
+      ctx.lineWidth = object.size;
+      ctx.lineCap = "butt";
+      ctx.lineJoin = "miter";
+      ctx.beginPath();
+      ctx.moveTo(lineStart.x, lineStart.y);
+      ctx.lineTo(lineEnd.x, lineEnd.y);
+      ctx.stroke();
+      ctx.restore();
+
       if (object.startHead) drawArrowHead(ctx, object.end, object.start, object.size, object.color, object.alpha);
       if (object.endHead) drawArrowHead(ctx, object.start, object.end, object.size, object.color, object.alpha);
     }
 
-    function drawShape(ctx, object) {
+    function drawShape(ctx, inputObject) {
+      const object = normalizeShapeObject(inputObject);
       const w = Math.max(1, object.w);
       const h = Math.max(1, object.h);
       const cx = object.x + w / 2;
       const cy = object.y + h / 2;
+      const hasFill = !!object.fillColor;
+      const hasStroke = object.stroke > 0 && !!object.strokeColor;
       ctx.save();
       ctx.globalAlpha = getAlpha01(object.alpha);
       ctx.lineWidth = object.stroke;
-      ctx.strokeStyle = object.color;
-      ctx.fillStyle = object.color;
+      ctx.strokeStyle = object.strokeColor;
+      ctx.fillStyle = object.fillColor;
       if (object.shape === "rectangle" || object.shape === "square") {
-        if (object.solid) ctx.fillRect(object.x, object.y, w, h);
-        if (object.stroke > 0) ctx.strokeRect(object.x, object.y, w, h);
+        if (hasFill) ctx.fillRect(object.x, object.y, w, h);
+        if (hasStroke) ctx.strokeRect(object.x, object.y, w, h);
       } else if (object.shape === "circle") {
         ctx.beginPath();
         ctx.ellipse(cx, cy, w / 2, h / 2, 0, 0, Math.PI * 2);
-        if (object.solid) ctx.fill();
-        if (object.stroke > 0) ctx.stroke();
+        if (hasFill) ctx.fill();
+        if (hasStroke) ctx.stroke();
       } else if (object.shape === "triangle") {
         ctx.beginPath();
         ctx.moveTo(cx, object.y);
         ctx.lineTo(object.x + w, object.y + h);
         ctx.lineTo(object.x, object.y + h);
         ctx.closePath();
-        if (object.solid) ctx.fill();
-        if (object.stroke > 0) ctx.stroke();
+        if (hasFill) ctx.fill();
+        if (hasStroke) ctx.stroke();
       } else if (object.shape === "hexagon") {
         drawPolygonPath(ctx, cx, cy, w / 2, h / 2, 6);
-        if (object.solid) ctx.fill();
-        if (object.stroke > 0) ctx.stroke();
+        if (hasFill) ctx.fill();
+        if (hasStroke) ctx.stroke();
       }
       ctx.restore();
     }
 
-    function drawTextObject(ctx, object) {
+    function drawTextObject(ctx, inputObject) {
+      const object = normalizeTextObject(inputObject);
+      const metrics = measureTextContent(object);
+      const w = Math.max(metrics.minWidth, object.width || metrics.minWidth);
+      const h = Math.max(metrics.minHeight, object.height || metrics.minHeight);
+      const padding = metrics.padding;
       ctx.save();
       ctx.globalAlpha = getAlpha01(object.alpha);
+      if (object.boxed) {
+        ctx.fillStyle = object.boxFillColor;
+        ctx.fillRect(object.x, object.y, w, h);
+        if ((object.boxStroke || 0) > 0) {
+          ctx.strokeStyle = object.boxStrokeColor;
+          ctx.lineWidth = object.boxStroke;
+          ctx.strokeRect(object.x, object.y, w, h);
+        }
+      }
       ctx.fillStyle = object.color;
-      ctx.font = `${object.size}px sans-serif`;
-      ctx.textBaseline = "top";
-      const lines = String(object.text || "").split("\n");
-      lines.forEach((line, index) => {
-        ctx.fillText(line, object.x, object.y + index * object.size * 1.25);
+      ctx.textBaseline = "middle";
+      const contentTop = object.y + Math.max(0, (h - metrics.textHeight) / 2);
+      metrics.lines.forEach((line, index) => {
+        const baseX = object.align === "center"
+          ? object.x + (w - line.width) / 2
+          : object.align === "right"
+            ? object.x + w - padding - line.width
+            : object.x + padding;
+        const y = contentTop + metrics.lineHeight * index + metrics.lineHeight / 2;
+        let x = baseX;
+        if (!line.segments.length) {
+          ctx.font = getTextFontString(object);
+          ctx.fillText(" ", x, y);
+          return;
+        }
+        line.segments.forEach((segment) => {
+          ctx.font = getTextFontString(object, 1, segment.fontStyle);
+          ctx.fillText(segment.text || " ", x, y);
+          x += ctx.measureText(segment.text || " ").width;
+        });
       });
       ctx.restore();
     }
 
-    function getTextBounds(object) {
-      const lines = String(object.text || "").split("\n");
-      const width = Math.max(...lines.map((line) => line.length), 1) * object.size * 0.62;
-      const height = lines.length * object.size * 1.25;
-      return { x: object.x, y: object.y, w: width, h: height };
+    function getTextBounds(inputObject) {
+      const object = normalizeTextObject(inputObject);
+      return { x: object.x, y: object.y, w: object.width, h: object.height };
     }
 
     function getBrushBounds(object) {
@@ -641,7 +1316,7 @@
     }
 
     function getObjectBounds(object) {
-      if (object.type === "brush") return getBrushBounds(object);
+      if (object.type === "brush" || object.type === "eraser") return getBrushBounds(object);
       if (object.type === "shape") return { x: object.x, y: object.y, w: object.w, h: object.h };
       if (object.type === "image") return { x: object.x, y: object.y, w: object.width, h: object.height };
       if (object.type === "text") return getTextBounds(object);
@@ -666,7 +1341,7 @@
 
     function translateObject(object, dx, dy) {
       const next = clone(object);
-      if (next.type === "brush") next.points = next.points.map((p) => ({ x: p.x + dx, y: p.y + dy }));
+      if (next.type === "brush" || next.type === "eraser") next.points = next.points.map((p) => ({ x: p.x + dx, y: p.y + dy }));
       else if (next.type === "shape" || next.type === "image" || next.type === "text") { next.x += dx; next.y += dy; }
       else if (next.type === "line" || next.type === "arrow") {
         next.start.x += dx; next.start.y += dy; next.end.x += dx; next.end.y += dy;
@@ -674,32 +1349,68 @@
       return next;
     }
 
-    function updateSelectedObject(object, patch) {
+    function enforceShapeGeometry(object) {
       const next = clone(object);
-      if (next.type === "brush") {
+      if (["circle", "square", "hexagon"].includes(next.shape)) {
+        const side = Math.max(next.w, next.h);
+        next.w = side;
+        next.h = side;
+      }
+      return next;
+    }
+
+    function updateObjectAttributes(object, patch) {
+      let next = normalizeObject(clone(object));
+      if (next.type === "brush" || next.type === "eraser") {
         if (typeof patch.size === "number") next.size = patch.size;
-        if (patch.shape) next.shape = patch.shape;
-        if (patch.color) next.color = patch.color;
+        if (patch.shape && next.type === "eraser") next.shape = patch.shape;
+        if (patch.color && next.type === "brush") next.color = patch.color;
         if (typeof patch.alpha === "number") next.alpha = patch.alpha;
+        if (typeof patch.startHead === "boolean" && next.type === "brush") next.startHead = patch.startHead;
+        if (typeof patch.endHead === "boolean" && next.type === "brush") next.endHead = patch.endHead;
+        if (next.type === "brush") next.shape = "circle";
       } else if (next.type === "line" || next.type === "arrow") {
         if (typeof patch.size === "number") next.size = patch.size;
         if (patch.color) next.color = patch.color;
         if (typeof patch.alpha === "number") next.alpha = patch.alpha;
+        if (typeof patch.startHead === "boolean") next.startHead = patch.startHead;
+        if (typeof patch.endHead === "boolean") next.endHead = patch.endHead;
       } else if (next.type === "shape") {
         if (typeof patch.size === "number") {
           const cx = next.x + next.w / 2;
           const cy = next.y + next.h / 2;
-          next.w = patch.size; next.h = patch.size; next.x = cx - next.w / 2; next.y = cy - next.h / 2;
+          next.w = patch.size;
+          next.h = patch.size;
+          next.x = cx - next.w / 2;
+          next.y = cy - next.h / 2;
         }
-        if (patch.shape) next.shape = patch.shape;
-        if (patch.color) next.color = patch.color;
+        if (patch.shape) {
+          next.shape = patch.shape;
+          const adjusted = enforceShapeGeometry(next);
+          next.w = adjusted.w;
+          next.h = adjusted.h;
+        }
+        if (patch.fillColor) next.fillColor = patch.fillColor;
+        if (patch.strokeColor) next.strokeColor = patch.strokeColor;
         if (typeof patch.alpha === "number") next.alpha = patch.alpha;
         if (typeof patch.stroke === "number") next.stroke = patch.stroke;
-        if (typeof patch.solid === "boolean") next.solid = patch.solid;
       } else if (next.type === "text") {
         if (typeof patch.size === "number") next.size = patch.size;
         if (patch.color) next.color = patch.color;
         if (typeof patch.alpha === "number") next.alpha = patch.alpha;
+        if (patch.fontStyle) {
+          next.fontStyle = normalizeFontStyle(patch.fontStyle);
+          next.textRuns = normalizeTextRuns(next.text, [{ text: next.text, fontStyle: next.fontStyle }], next.fontStyle);
+        }
+        if (patch.align) next.align = patch.align;
+        if (typeof patch.boxed === "boolean") next.boxed = patch.boxed;
+        if (patch.boxFillColor) next.boxFillColor = patch.boxFillColor;
+        if (patch.boxStrokeColor) next.boxStrokeColor = patch.boxStrokeColor;
+        if (typeof patch.stroke === "number") next.boxStroke = patch.stroke;
+        if (typeof patch.boxStroke === "number") next.boxStroke = patch.boxStroke;
+        if (typeof patch.width === "number") next.width = patch.width;
+        if (typeof patch.height === "number") next.height = patch.height;
+        next = ensureTextBoxFitsContent(next);
       } else if (next.type === "image") {
         if (typeof patch.alpha === "number") next.alpha = patch.alpha;
       }
@@ -712,13 +1423,49 @@
       return distance(values[0], values[1]);
     }
 
+    function getBaseElementLabel(object) {
+      if (object.type === "brush") return "Brush";
+      if (object.type === "eraser") return "Eraser";
+      if (object.type === "line") return "Line";
+      if (object.type === "arrow") return "Arrow";
+      if (object.type === "shape") return "Shape";
+      if (object.type === "text") return "Text";
+      if (object.type === "image") return "Image";
+      return titleCase(object.type);
+    }
+
+    function getElementMetaList(scene) {
+      const counts = {};
+      return scene.objects.map((object, index) => {
+        const base = getBaseElementLabel(object);
+        counts[base] = (counts[base] || 0) + 1;
+        return {
+          object,
+          timeIndex: index,
+          label: `${base}${counts[base]}`,
+          baseLabel: base,
+        };
+      });
+    }
+
+    function describeElement(object) {
+      if (object.type === "shape") return `${object.shape}, ${Math.round(object.w)}×${Math.round(object.h)}`;
+      if (object.type === "line" || object.type === "arrow") return `${Math.round(distance(object.start, object.end))} px`;
+      if (object.type === "brush" || object.type === "eraser") return `${object.points?.length || 0} points`;
+      if (object.type === "text") return (object.text || "").split("\n")[0] || "empty";
+      if (object.type === "image") return `${Math.round(object.width)}×${Math.round(object.height)}`;
+      return "";
+    }
+
     const state = {
       scene: { backgroundColor: "#ffffff", objects: [] },
       history: [],
       historyIndex: 0,
+      historyActions: [],
       activeTool: TOOL.BRUSH,
       selectMode: false,
-      selectedId: null,
+      multiSelectMode: false,
+      selectedIds: [],
       interaction: null,
       draft: null,
       editingText: null,
@@ -726,13 +1473,28 @@
       canvasSize: { width: 1200, height: 700 },
       touchMap: new Map(),
       pinchState: null,
+      elementClipboard: null,
+      lastClipboardSource: null,
+      clipboardPasteCount: 0,
+      logGroupOpen: {},
+      panels: { open: null, elementSort: "time" },
+      shapeColourTargets: { fill: true, stroke: false },
+      sharedColour: "#000000",
+      lineMenu: { visible: false, targetId: null, x: 0, y: 0 },
       toolPrefs: {
-        [TOOL.BRUSH]: { color: "#000000", size: 10, shape: "circle", alpha: 100 },
-        [TOOL.LINE]: { color: "#000000", size: 4, alpha: 100 },
-        [TOOL.SHAPE]: { color: "#000000", size: 90, shape: "rectangle", stroke: 3, solid: true, alpha: 100 },
-        [TOOL.ARROW_ONE]: { color: "#000000", size: 4, alpha: 100 },
-        [TOOL.ARROW_TWO]: { color: "#000000", size: 4, alpha: 100 },
-        [TOOL.TEXT]: { color: "#000000", size: 28, alpha: 100 },
+        [TOOL.BRUSH]: { color: "#000000", size: 10, alpha: 100, startHead: false, endHead: false },
+        [TOOL.ERASER]: { size: 18, shape: "circle", alpha: 100 },
+        [TOOL.LINE]: { color: "#000000", size: 4, alpha: 100, startHead: false, endHead: false },
+        [TOOL.SHAPE]: { fillColor: "#000000", strokeColor: "#000000", size: 90, shape: "rectangle", stroke: 3, alpha: 100 },
+        [TOOL.CUT]: {},
+        [TOOL.ARROW_ONE]: { color: "#000000", size: 4, alpha: 100, startHead: false, endHead: true },
+        [TOOL.ARROW_TWO]: { color: "#000000", size: 4, alpha: 100, startHead: true, endHead: true },
+        [TOOL.TEXT]: {
+          color: "#000000", size: 28, alpha: 100,
+          fontStyle: "regular", align: "left", boxed: false,
+          boxFillColor: "#ffffff", boxStrokeColor: "#000000", boxStroke: 2,
+          width: 180, height: 70
+        },
         [TOOL.BACKGROUND]: { color: "#ffffff" },
         image: { scalePercent: 100, alpha: 100 },
       },
@@ -745,27 +1507,241 @@
     const fileInput = $("fileInput");
     const textEditor = $("textEditor");
     const confirmOverlay = $("confirmOverlay");
+    const sidePanel = $("sidePanel");
+    const sidePanelTitle = $("sidePanelTitle");
+    const sidePanelBody = $("sidePanelBody");
     const ctx = canvas.getContext("2d");
 
-    function selectedObject() { return state.scene.objects.find((obj) => obj.id === state.selectedId) || null; }
-    function activePrefs() { return state.activeTool ? state.toolPrefs[state.activeTool] || {} : {}; }
-    function targetType() {
-      const sel = selectedObject();
-      if (sel) return sel.type;
-      if (state.activeTool === TOOL.ARROW_ONE || state.activeTool === TOOL.ARROW_TWO) return "arrow";
-      return state.activeTool;
+    function escapeHtml(text) {
+      return String(text)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;");
     }
 
-    function pushHistory(scene) {
+    function getTextRunsSignature(text, textRuns, fontStyle = "regular") {
+      return JSON.stringify(normalizeTextRuns(text, textRuns, fontStyle));
+    }
+
+    function renderTextRunsHtml(runs) {
+      return runs.map((run) => {
+        const style = run.fontStyle === "italic"
+          ? "font-style:italic;font-weight:400;"
+          : run.fontStyle === "bold"
+            ? "font-style:normal;font-weight:700;"
+            : "font-style:normal;font-weight:400;";
+        return `<span data-font-style="${run.fontStyle}" style="${style}">${escapeHtml(run.text)}</span>`;
+      }).join("");
+    }
+
+    function parseTextRunsFromDom(root, fallbackStyle = "regular") {
+      const runs = [];
+      const visit = (node, activeStyle) => {
+        if (node.nodeType === Node.TEXT_NODE) {
+          appendTextRun(runs, node.nodeValue || "", activeStyle);
+          return;
+        }
+        if (node.nodeType !== Node.ELEMENT_NODE) return;
+        const tag = node.tagName.toLowerCase();
+        if (tag === "br") {
+          appendTextRun(runs, "\n", activeStyle);
+          return;
+        }
+        let nextStyle = activeStyle;
+        const dataStyle = node.getAttribute("data-font-style");
+        if (dataStyle) nextStyle = normalizeFontStyle(dataStyle);
+        else if (tag === "b" || tag === "strong") nextStyle = "bold";
+        else if (tag === "i" || tag === "em") nextStyle = "italic";
+        else if (node.style.fontStyle === "italic") nextStyle = "italic";
+        else if (node.style.fontWeight === "bold" || Number(node.style.fontWeight) >= 600) nextStyle = "bold";
+
+        node.childNodes.forEach((child) => visit(child, nextStyle));
+        if ((tag === "div" || tag === "p") && node.nextSibling) appendTextRun(runs, "\n", activeStyle);
+      };
+      root.childNodes.forEach((child) => visit(child, fallbackStyle));
+      return runs;
+    }
+
+    function getTextEditorSelectionOffsets() {
+      const selection = window.getSelection();
+      if (!selection || !selection.rangeCount) return null;
+      const range = selection.getRangeAt(0);
+      if (!textEditor.contains(range.startContainer) || !textEditor.contains(range.endContainer)) return null;
+
+      const startRange = range.cloneRange();
+      startRange.selectNodeContents(textEditor);
+      startRange.setEnd(range.startContainer, range.startOffset);
+
+      const endRange = range.cloneRange();
+      endRange.selectNodeContents(textEditor);
+      endRange.setEnd(range.endContainer, range.endOffset);
+
+      return { start: startRange.toString().length, end: endRange.toString().length };
+    }
+
+    function findTextEditorPosition(offset) {
+      const walker = document.createTreeWalker(textEditor, NodeFilter.SHOW_TEXT);
+      let remaining = Math.max(0, offset);
+      let lastNode = null;
+      while (walker.nextNode()) {
+        const node = walker.currentNode;
+        const length = node.nodeValue?.length || 0;
+        lastNode = node;
+        if (remaining <= length) return { node, offset: remaining };
+        remaining -= length;
+      }
+      if (lastNode) return { node: lastNode, offset: lastNode.nodeValue.length };
+      return { node: textEditor, offset: textEditor.childNodes.length };
+    }
+
+    function restoreTextEditorSelection(start, end = start) {
+      const selection = window.getSelection();
+      if (!selection) return;
+      const range = document.createRange();
+      const startPos = findTextEditorPosition(start);
+      const endPos = findTextEditorPosition(end);
+      range.setStart(startPos.node, startPos.offset);
+      range.setEnd(endPos.node, endPos.offset);
+      selection.removeAllRanges();
+      selection.addRange(range);
+    }
+
+    function syncEditingTextFromEditorDom() {
+      if (!state.editingText) return;
+      const runs = parseTextRunsFromDom(textEditor, state.editingText.fontStyle);
+      state.editingText.textRuns = runs;
+      state.editingText.text = runs.map((run) => run.text).join("");
+      const unifiedStyle = commonValue(runs.map((run) => run.fontStyle));
+      if (unifiedStyle) state.editingText.fontStyle = unifiedStyle;
+      textEditor.dataset.signature = getTextRunsSignature(state.editingText.text, state.editingText.textRuns, state.editingText.fontStyle);
+    }
+
+    function syncTextEditorDomFromState(selectionToRestore = null) {
+      if (!state.editingText) {
+        textEditor.innerHTML = "";
+        textEditor.dataset.signature = "";
+        return;
+      }
+      const signature = getTextRunsSignature(state.editingText.text, state.editingText.textRuns, state.editingText.fontStyle);
+      if (textEditor.dataset.signature !== signature) {
+        textEditor.innerHTML = renderTextRunsHtml(getTextRuns(state.editingText));
+        textEditor.dataset.signature = signature;
+      }
+      if (selectionToRestore) restoreTextEditorSelection(selectionToRestore.start, selectionToRestore.end);
+    }
+
+    function applyFontStyleToTextRuns(runs, start, end, fontStyle) {
+      const nextRuns = [];
+      let cursor = 0;
+      normalizeTextRuns(runs.map((run) => run.text).join(""), runs, fontStyle).forEach((run) => {
+        const runStart = cursor;
+        const runEnd = cursor + run.text.length;
+        if (runEnd <= start || runStart >= end) {
+          appendTextRun(nextRuns, run.text, run.fontStyle);
+        } else {
+          const before = run.text.slice(0, Math.max(0, start - runStart));
+          const selected = run.text.slice(Math.max(0, start - runStart), Math.max(0, end - runStart));
+          const after = run.text.slice(Math.max(0, end - runStart));
+          appendTextRun(nextRuns, before, run.fontStyle);
+          appendTextRun(nextRuns, selected, fontStyle);
+          appendTextRun(nextRuns, after, run.fontStyle);
+        }
+        cursor = runEnd;
+      });
+      return nextRuns;
+    }
+
+    function applyEditingTextFontStyle(fontStyle) {
+      if (!state.editingText) return false;
+      const selection = getTextEditorSelectionOffsets();
+      if (!selection || selection.start === selection.end) return false;
+      syncEditingTextFromEditorDom();
+      state.editingText.textRuns = applyFontStyleToTextRuns(getTextRuns(state.editingText), selection.start, selection.end, fontStyle);
+      state.editingText.text = state.editingText.textRuns.map((run) => run.text).join("");
+      state.editingText.fontStyle = commonValue(state.editingText.textRuns.map((run) => run.fontStyle)) ?? fontStyle;
+      state.editingText = ensureTextBoxFitsContent(state.editingText);
+      updateToolPreference(TOOL.TEXT, { fontStyle });
+      renderTextEditor(selection);
+      renderAttributes();
+      return true;
+    }
+
+    function insertPlainTextIntoEditor(text) {
+      if (!text) return;
+      if (typeof document.queryCommandSupported === "function" && document.queryCommandSupported("insertText")) {
+        document.execCommand("insertText", false, text);
+        return;
+      }
+      const selection = window.getSelection();
+      if (!selection || !selection.rangeCount) return;
+      const range = selection.getRangeAt(0);
+      range.deleteContents();
+      const node = document.createTextNode(text);
+      range.insertNode(node);
+      range.setStartAfter(node);
+      range.collapse(true);
+      selection.removeAllRanges();
+      selection.addRange(range);
+    }
+
+    function selectedObjects() {
+      const idSet = new Set(state.selectedIds);
+      return state.scene.objects.filter((object) => idSet.has(object.id));
+    }
+    function selectedObject() { return state.selectedIds.length === 1 ? selectedObjects()[0] || null : null; }
+    function activePrefs() { return state.activeTool ? state.toolPrefs[state.activeTool] || {} : {}; }
+
+    function getGroupMemberIds(groupId) {
+      if (!groupId) return [];
+      return state.scene.objects.filter((object) => object.groupId === groupId).map((object) => object.id);
+    }
+
+    function getSelectableIdsForObject(object) {
+      return object.groupId ? getGroupMemberIds(object.groupId) : [object.id];
+    }
+
+    function setSelection(ids) {
+      state.selectedIds = uniqueIds(ids).filter((id) => state.scene.objects.some((object) => object.id === id));
+    }
+
+    function addToSelection(ids) { setSelection([...state.selectedIds, ...ids]); }
+    function removeFromSelection(ids) {
+      const removeSet = new Set(ids);
+      setSelection(state.selectedIds.filter((id) => !removeSet.has(id)));
+    }
+
+    function selectionBounds() {
+      return selectedObjects().reduce((acc, object) => unionRect(acc, getObjectBounds(object)), null);
+    }
+
+    function currentTargetTypes() {
+      const selection = selectedObjects();
+      if (selection.length) return selection.map((object) => object.type === "arrow" ? "arrow" : object.type);
+      if (state.activeTool === TOOL.ARROW_ONE || state.activeTool === TOOL.ARROW_TWO) return ["arrow"];
+      return state.activeTool ? [state.activeTool] : [];
+    }
+
+    function pushHistory(scene, actionMeta = {}) {
       const cloned = clone(scene);
       state.history = state.history.slice(0, state.historyIndex + 1);
+      state.historyActions = state.historyActions.slice(0, state.historyIndex + 1);
       state.history.push(cloned);
       state.historyIndex = state.history.length - 1;
       state.scene = cloned;
+      state.historyActions.push({
+        stateIndex: state.historyIndex,
+        label: actionMeta.label || "Edit",
+        detail: actionMeta.detail || "",
+        groupKey: actionMeta.groupKey || null,
+      });
       renderAll();
     }
 
-    function initHistory() { state.history = [clone(state.scene)]; state.historyIndex = 0; }
+    function initHistory() {
+      state.history = [clone(state.scene)];
+      state.historyIndex = 0;
+      state.historyActions = [{ stateIndex: 0, label: "Initial state", detail: "", groupKey: null }];
+    }
 
     function screenToWorld(point) {
       return { x: (point.x - state.view.offsetX) / state.view.scale, y: (point.y - state.view.offsetY) / state.view.scale };
@@ -805,15 +1781,37 @@
       return state.imageCache[dataUrl];
     }
 
+    function drawSelectionOverlay(targetCtx, selectedIds) {
+      if (!selectedIds?.length) return;
+      const idSet = new Set(selectedIds);
+      const selected = state.scene.objects.filter((object) => idSet.has(object.id));
+      if (!selected.length) return;
+      let union = null;
+      targetCtx.save();
+      targetCtx.strokeStyle = "#111111";
+      targetCtx.lineWidth = 2;
+      targetCtx.setLineDash([8, 6]);
+      selected.forEach((object) => {
+        const bounds = getObjectBounds(object);
+        union = unionRect(union, bounds);
+        targetCtx.strokeRect(bounds.x - 6, bounds.y - 6, bounds.w + 12, bounds.h + 12);
+      });
+      if (selected.length > 1 && union) {
+        targetCtx.setLineDash([10, 6]);
+        targetCtx.lineWidth = 2.5;
+        targetCtx.strokeRect(union.x - 10, union.y - 10, union.w + 20, union.h + 20);
+      }
+      targetCtx.restore();
+    }
+
     function drawScene(targetCtx, scene, options = {}) {
       const backgroundRect = options.backgroundRect || { x: 0, y: 0, w: state.canvasSize.width, h: state.canvasSize.height };
       targetCtx.clearRect(0, 0, state.canvasSize.width, state.canvasSize.height);
       targetCtx.fillStyle = scene.backgroundColor;
       targetCtx.fillRect(backgroundRect.x, backgroundRect.y, backgroundRect.w, backgroundRect.h);
       for (const object of scene.objects) {
-        if (object.type === "brush") drawBrush(targetCtx, object);
-        if (object.type === "line") drawLine(targetCtx, object);
-        if (object.type === "arrow") drawArrow(targetCtx, object);
+        if (object.type === "brush" || object.type === "eraser") drawBrush(targetCtx, object, scene.backgroundColor);
+        if (object.type === "line" || object.type === "arrow") drawLine(targetCtx, object);
         if (object.type === "shape") drawShape(targetCtx, object);
         if (object.type === "text") drawTextObject(targetCtx, object);
         if (object.type === "image") {
@@ -828,23 +1826,11 @@
       }
       if (options.preview) {
         const preview = options.preview;
-        if (preview.type === "brush") drawBrush(targetCtx, preview);
-        if (preview.type === "line") drawLine(targetCtx, preview);
-        if (preview.type === "arrow") drawArrow(targetCtx, preview);
+        if (preview.type === "brush" || preview.type === "eraser") drawBrush(targetCtx, preview, scene.backgroundColor);
+        if (preview.type === "line" || preview.type === "arrow") drawLine(targetCtx, preview);
         if (preview.type === "shape") drawShape(targetCtx, preview);
       }
-      if (options.selectedId) {
-        const selected = scene.objects.find((obj) => obj.id === options.selectedId);
-        if (selected) {
-          const bounds = getObjectBounds(selected);
-          targetCtx.save();
-          targetCtx.strokeStyle = "#111111";
-          targetCtx.lineWidth = 2;
-          targetCtx.setLineDash([8, 6]);
-          targetCtx.strokeRect(bounds.x - 6, bounds.y - 6, bounds.w + 12, bounds.h + 12);
-          targetCtx.restore();
-        }
-      }
+      drawSelectionOverlay(targetCtx, options.selectedIds);
     }
 
     function renderCanvas() {
@@ -858,21 +1844,27 @@
       ctx.save();
       ctx.translate(state.view.offsetX, state.view.offsetY);
       ctx.scale(state.view.scale, state.view.scale);
-      drawScene(ctx, state.scene, { preview: state.draft, selectedId: state.selectedId, backgroundRect });
+      drawScene(ctx, state.scene, { preview: state.draft, selectedIds: state.selectedIds, backgroundRect });
       ctx.restore();
     }
 
-    function renderTextEditor() {
-      if (!state.editingText) { textEditor.style.display = "none"; return; }
+    function renderTextEditor(selectionToRestore = null) {
+      if (!state.editingText) {
+        textEditor.style.display = "none";
+        syncTextEditorDomFromState();
+        return;
+      }
       const screen = worldToScreen({ x: state.editingText.x, y: state.editingText.y });
       textEditor.style.display = "block";
       textEditor.style.left = `${screen.x}px`;
       textEditor.style.top = `${screen.y}px`;
-      textEditor.style.minHeight = `${state.editingText.size * state.view.scale * 1.2}px`;
-      textEditor.style.fontSize = `${state.editingText.size * state.view.scale}px`;
+      textEditor.style.width = `${Math.max(80, state.editingText.width * state.view.scale)}px`;
+      textEditor.style.height = `${Math.max(34, state.editingText.height * state.view.scale)}px`;
+      textEditor.style.minHeight = `${Math.max(34, state.editingText.size * state.view.scale * 1.2)}px`;
       textEditor.style.color = state.editingText.color;
       textEditor.style.opacity = `${state.editingText.alpha / 100}`;
-      if (textEditor.value !== state.editingText.text) textEditor.value = state.editingText.text;
+      syncTextEditorDomFromState(selectionToRestore);
+      updateTextEditorVisuals();
     }
 
     function renderTools() {
@@ -881,19 +1873,26 @@
       for (const tool of TOOL_ORDER) {
         const btn = document.createElement("button");
         btn.className = "tool-btn";
-        const active = tool === "select" ? state.selectMode : state.activeTool === tool;
+        const active =
+          (tool === TOOL.SELECT && state.selectMode && !state.multiSelectMode) ||
+          (tool === TOOL.MULTI_SELECT && state.selectMode && state.multiSelectMode) ||
+          (tool !== TOOL.SELECT && tool !== TOOL.MULTI_SELECT && tool !== TOOL.GROUP && state.activeTool === tool);
         if (active) btn.classList.add("active");
         btn.textContent = TOOL_LABEL[tool];
         btn.addEventListener("click", () => toggleTool(tool));
         grid.appendChild(btn);
       }
+      $("elementsBtn").classList.toggle("active", state.panels.open === "elements");
+      $("logBtn").classList.toggle("active", state.panels.open === "log");
     }
 
     function renderShapes() {
       const grid = $("shapeGrid");
       grid.innerHTML = "";
-      const sel = selectedObject();
-      const currentShape = sel ? sel.shape : activePrefs().shape;
+      const selection = selectedObjects().filter((object) => object.type === "shape" || object.type === "eraser");
+      const currentShape = selection.length
+        ? (commonValue(selection.map((object) => object.shape)) ?? selection[0].shape)
+        : activePrefs().shape;
       for (const shape of SHAPES) {
         const btn = document.createElement("button");
         btn.className = "btn";
@@ -901,144 +1900,605 @@
         btn.style.minHeight = "26px";
         btn.style.fontSize = "10px";
         btn.textContent = shape;
-        btn.addEventListener("click", () => applyAttributesPatch({ shape }));
+        btn.addEventListener("click", () => applyAttributesPatch({ shape }, { label: "Change shape", groupKey: "attr-shape" }));
         grid.appendChild(btn);
       }
+    }
+
+    function currentShapeTargetColours() {
+      return currentColourTargetValues(selectedObjects());
+    }
+
+    function resolveCurrentSwatchColour() {
+      const selection = selectedObjects();
+      if (selection.length) {
+        const nonTargeted = selection.filter((object) => !objectUsesColourTargets(object));
+        const targeted = selection.filter((object) => objectUsesColourTargets(object));
+        if (nonTargeted.length && !targeted.length) return commonValue(nonTargeted.map((object) => object.color)) ?? nonTargeted[0].color;
+        if (targeted.length && !nonTargeted.length && (state.shapeColourTargets.fill || state.shapeColourTargets.stroke)) {
+          const targetColours = currentColourTargetValues(targeted);
+          const selectedColours = [];
+          if (state.shapeColourTargets.fill) selectedColours.push(targetColours.fillColour);
+          if (state.shapeColourTargets.stroke) selectedColours.push(targetColours.strokeColour);
+          if (!selectedColours.length) return undefined;
+          return selectedColours.every((value) => value === selectedColours[0]) ? selectedColours[0] : undefined;
+        }
+        if (selection.every((object) => object.type === "text")) {
+          return commonValue(selection.map((object) => object.color)) ?? selection[0].color;
+        }
+        return undefined;
+      }
+      if (state.activeTool === TOOL.BACKGROUND) return state.scene.backgroundColor;
+      if ((state.activeTool === TOOL.SHAPE) || (state.activeTool === TOOL.TEXT && state.toolPrefs[TOOL.TEXT].boxed && (state.shapeColourTargets.fill || state.shapeColourTargets.stroke))) {
+        const targetColours = currentColourTargetValues([]);
+        const colours = [];
+        if (state.shapeColourTargets.fill) colours.push(targetColours.fillColour);
+        if (state.shapeColourTargets.stroke) colours.push(targetColours.strokeColour);
+        return colours.length === 1 || colours.every((value) => value === colours[0]) ? colours[0] : undefined;
+      }
+      return activePrefs().color;
     }
 
     function renderColours() {
       const grid = $("colourGrid");
       grid.innerHTML = "";
-      const sel = selectedObject();
-      const currentColour = sel ? sel.color : state.activeTool === TOOL.BACKGROUND ? state.scene.backgroundColor : activePrefs().color;
+      const currentColour = resolveCurrentSwatchColour();
       for (const swatch of COLOUR_SWATCHES) {
         const btn = document.createElement("button");
         btn.className = "swatch";
         if (currentColour === swatch) btn.classList.add("active");
         btn.style.background = swatch;
-        btn.addEventListener("click", () => applyAttributesPatch({ color: swatch }));
+        btn.addEventListener("click", () => applyAttributesPatch({ color: swatch }, { label: "Change colour", groupKey: "attr-colour" }));
         grid.appendChild(btn);
       }
     }
 
-    function renderAttributes() {
-      const type = targetType();
-      const sel = selectedObject();
-      const prefs = activePrefs();
-      const supportsSize = ["brush", "line", "shape", "arrow", "text", "image"].includes(type);
-      const supportsShape = ["brush", "shape"].includes(type);
-      const supportsAlpha = ["brush", "line", "shape", "arrow", "text", "image"].includes(type);
-      const supportsColour = ["brush", "line", "shape", "arrow", "text", TOOL.BACKGROUND].includes(type);
-      const supportsStrokeSolid = type === "shape";
-      $("attributesSection").style.display = (supportsSize || supportsShape || supportsAlpha || supportsColour || supportsStrokeSolid) ? "flex" : "none";
-      $("sizeField").style.display = supportsSize ? "flex" : "none";
-      $("shapeField").style.display = supportsShape ? "flex" : "none";
-      $("alphaField").style.display = supportsAlpha ? "flex" : "none";
-      $("strokeField").style.display = supportsStrokeSolid ? "flex" : "none";
-      $("solidField").style.display = supportsStrokeSolid ? "flex" : "none";
-      $("colourField").style.display = supportsColour ? "flex" : "none";
-      $("backgroundRgbField").style.display = state.activeTool === TOOL.BACKGROUND && !sel ? "grid" : "none";
+    function renderShapeColourTargets() {
+      const targets = currentShapeTargetColours();
+      $("fillTargetInput").checked = !!state.shapeColourTargets.fill;
+      $("strokeTargetInput").checked = !!state.shapeColourTargets.stroke;
+      $("fillPreview").style.background = targets.fillColour || "#000000";
+      $("strokePreview").style.background = targets.strokeColour || "#000000";
+    }
 
-      const currentSize = sel?.type === "image" ? state.toolPrefs.image.scalePercent : sel?.size ?? prefs.size ?? 1;
-      const currentAlpha = sel ? (sel.alpha ?? 100) : (prefs.alpha ?? 100);
-      const currentStroke = sel?.stroke ?? prefs.stroke ?? 3;
-      const currentSolid = sel?.solid ?? prefs.solid ?? true;
+    function renderOptionGrid(gridId, options, currentValue, onSelect) {
+      const grid = $(gridId);
+      grid.innerHTML = "";
+      options.forEach((option) => {
+        const btn = document.createElement("button");
+        btn.className = "btn";
+        btn.style.minHeight = "26px";
+        btn.style.fontSize = "10px";
+        if (currentValue === option.value) btn.classList.add("active");
+        btn.textContent = option.label;
+        btn.addEventListener("click", () => onSelect(option.value));
+        grid.appendChild(btn);
+      });
+    }
+
+    function renderAttributes() {
+      const types = currentTargetTypes();
+      const selection = selectedObjects();
+      const selectionOrPrefs = (prop, fallback) => {
+        if (selection.length) {
+          const values = selection.map((object) => object[prop]).filter((value) => value !== undefined);
+          return commonValue(values) ?? values[0] ?? fallback;
+        }
+        return fallback;
+      };
+      const supportsSize = types.some((type) => ["brush", "eraser", "line", "shape", "arrow", "text", "image"].includes(type));
+      const supportsAlpha = types.some((type) => ["brush", "eraser", "line", "shape", "arrow", "text", "image"].includes(type));
+      const supportsColour = types.some((type) => ["brush", "line", "shape", "arrow", "text", TOOL.BACKGROUND].includes(type));
+      const supportsShapeTool = types.length > 0 && types.every((type) => ["eraser", "shape"].includes(type));
+      const supportsShapeSpecific = types.length > 0 && types.every((type) => type === "shape");
+      const supportsTextOptions = types.length > 0 && types.every((type) => type === "text");
+      const boxedTextContext = supportsTextOptions && (selection.length ? selection.every((object) => !!object.boxed) : !!state.toolPrefs[TOOL.TEXT].boxed);
+      const supportsColourTargets = supportsShapeSpecific || boxedTextContext;
+      const supportsStrokeField = supportsShapeSpecific || boxedTextContext;
+      const supportsArrowOptions = types.length > 0 && types.every((type) => ["line", "arrow", "brush"].includes(type));
+      const supportsBackgroundRgb = state.activeTool === TOOL.BACKGROUND && !selection.length;
+      const supportsGeneral = supportsSize || supportsAlpha || supportsColour;
+      const supportsToolAttributes = supportsShapeTool || supportsShapeSpecific || supportsTextOptions || supportsArrowOptions || supportsBackgroundRgb;
+
+      $("attributesSection").style.display = supportsGeneral ? "flex" : "none";
+      $("toolAttributesSection").style.display = supportsToolAttributes ? "flex" : "none";
+      $("toolAttributesDivider").style.display = supportsToolAttributes ? "block" : "none";
+      $("sizeField").style.display = supportsSize ? "flex" : "none";
+      $("alphaField").style.display = supportsAlpha ? "flex" : "none";
+      $("colourField").style.display = supportsColour ? "flex" : "none";
+      $("shapeField").style.display = supportsShapeTool ? "flex" : "none";
+      $("strokeField").style.display = supportsStrokeField ? "flex" : "none";
+      $("shapeTargetField").style.display = supportsColourTargets ? "flex" : "none";
+      $("lineArrowField").style.display = supportsArrowOptions ? "flex" : "none";
+      $("textStyleField").style.display = supportsTextOptions ? "flex" : "none";
+      $("textAlignField").style.display = supportsTextOptions ? "flex" : "none";
+      $("textBoxField").style.display = supportsTextOptions ? "flex" : "none";
+      $("backgroundRgbField").style.display = supportsBackgroundRgb ? "grid" : "none";
+
+      const currentSize = selection.length
+        ? (selection.length === 1 && selection[0].type === "image"
+            ? state.toolPrefs.image.scalePercent
+            : selectionOrPrefs("size", activePrefs().size ?? 1))
+        : activePrefs().size ?? 1;
+      const currentAlpha = selection.length ? (selectionOrPrefs("alpha", activePrefs().alpha ?? 100)) : (activePrefs().alpha ?? 100);
+      const currentStrokeValues = selection.map((object) => object.type === "text" ? object.boxStroke : object.stroke).filter((value) => value !== undefined);
+      const currentStroke = selection.length
+        ? (commonValue(currentStrokeValues) ?? currentStrokeValues[0] ?? (supportsTextOptions ? activePrefs().boxStroke ?? 2 : activePrefs().stroke ?? 3))
+        : (supportsTextOptions ? activePrefs().boxStroke ?? 2 : activePrefs().stroke ?? 3);
+      const currentStartHead = selection.length ? (selectionOrPrefs("startHead", activePrefs().startHead ?? false)) : (activePrefs().startHead ?? false);
+      const currentEndHead = selection.length ? (selectionOrPrefs("endHead", activePrefs().endHead ?? false)) : (activePrefs().endHead ?? false);
+      const currentFontStyle = selection.length ? (selectionOrPrefs("fontStyle", activePrefs().fontStyle ?? "regular")) : (activePrefs().fontStyle ?? "regular");
+      const currentAlign = selection.length ? (selectionOrPrefs("align", activePrefs().align ?? "left")) : (activePrefs().align ?? "left");
+      const currentBoxed = selection.length ? (selectionOrPrefs("boxed", activePrefs().boxed ?? false)) : (activePrefs().boxed ?? false);
       const backgroundRgb = {
         r: parseInt(state.scene.backgroundColor.slice(1, 3), 16),
         g: parseInt(state.scene.backgroundColor.slice(3, 5), 16),
         b: parseInt(state.scene.backgroundColor.slice(5, 7), 16),
       };
-      $("sizeInput").value = currentSize;
-      $("alphaInput").value = currentAlpha;
-      $("alphaValue").textContent = String(currentAlpha);
-      $("strokeInput").value = currentStroke;
-      $("solidInput").checked = !!currentSolid;
+
+      $("sizeInput").value = Number.isFinite(Number(currentSize)) ? currentSize : "";
+      $("alphaInput").value = Number.isFinite(Number(currentAlpha)) ? currentAlpha : 100;
+      $("alphaValue").textContent = String(Number.isFinite(Number(currentAlpha)) ? currentAlpha : 100);
+      $("strokeInput").value = Number.isFinite(Number(currentStroke)) ? currentStroke : 3;
+      $("lineStartHeadToolInput").checked = !!currentStartHead;
+      $("lineEndHeadToolInput").checked = !!currentEndHead;
       $("bgR").value = backgroundRgb.r;
       $("bgG").value = backgroundRgb.g;
       $("bgB").value = backgroundRgb.b;
-      if (supportsShape) renderShapes();
+
+      if (supportsShapeTool) renderShapes();
       if (supportsColour) renderColours();
+      if (supportsColourTargets) renderShapeColourTargets();
+      if (supportsTextOptions) {
+        renderOptionGrid("textStyleGrid", [
+          { value: "regular", label: "Regular" },
+          { value: "italic", label: "Italic" },
+          { value: "bold", label: "Bold" },
+        ], currentFontStyle, (fontStyle) => applyAttributesPatch({ fontStyle }, { label: "Change typeface", groupKey: "text-style" }));
+        renderOptionGrid("textAlignGrid", [
+          { value: "left", label: "Left" },
+          { value: "center", label: "Center" },
+          { value: "right", label: "Right" },
+        ], currentAlign, (align) => applyAttributesPatch({ align }, { label: "Change text alignment", groupKey: "text-align" }));
+        renderOptionGrid("textBoxGrid", [
+          { value: true, label: "On" },
+          { value: false, label: "Off" },
+        ], !!currentBoxed, (boxed) => applyAttributesPatch({ boxed }, { label: "Toggle text box", groupKey: "text-box" }));
+      }
     }
 
-    function renderAll() { renderTools(); renderAttributes(); renderCanvas(); renderTextEditor(); }
+    function jumpToHistoryState(index) {
+      if (index < 0 || index >= state.history.length) return;
+      state.historyIndex = index;
+      state.scene = clone(state.history[index]);
+      state.draft = null;
+      state.interaction = null;
+      state.editingText = null;
+      setSelection([]);
+      renderAll();
+    }
+
+    function buildLogGroups() {
+      const actions = state.historyActions;
+      const groups = [];
+      if (!actions.length) return groups;
+      groups.push({ type: "single", entry: actions[0] });
+      let current = null;
+      for (let i = 1; i < actions.length; i += 1) {
+        const entry = actions[i];
+        if (entry.groupKey && current && current.groupKey === entry.groupKey) {
+          current.entries.push(entry);
+        } else {
+          current = { type: "group", groupKey: entry.groupKey, entries: [entry] };
+          groups.push(current);
+        }
+      }
+      return groups.map((group, index) => {
+        if (group.type === "single") return group;
+        if (!group.groupKey || group.entries.length === 1) return { type: "single", entry: group.entries[0] };
+        return { ...group, id: `${group.groupKey}_${index}` };
+      });
+    }
+
+    function renderLogPanel() {
+      sidePanelTitle.textContent = "Log";
+      sidePanelBody.innerHTML = "";
+      const note = document.createElement("div");
+      note.className = "muted-note";
+      note.textContent = "Click an entry to move the canvas back to that state.";
+      sidePanelBody.appendChild(note);
+
+      const list = document.createElement("div");
+      list.className = "list";
+      const groups = buildLogGroups();
+      groups.forEach((group) => {
+        if (group.type === "single") {
+          const row = document.createElement("div");
+          row.className = "list-row";
+          if (state.historyIndex === group.entry.stateIndex) row.classList.add("selected");
+          const main = document.createElement("div");
+          main.className = "row-main";
+          main.innerHTML = `
+            <div class="row-main-text">
+              <div class="row-title">${group.entry.label}</div>
+              <div class="row-subtitle">State ${group.entry.stateIndex}</div>
+            </div>
+          `;
+          main.addEventListener("click", () => jumpToHistoryState(group.entry.stateIndex));
+          row.appendChild(main);
+          list.appendChild(row);
+          return;
+        }
+
+        const isOpen = !!state.logGroupOpen[group.id];
+        const row = document.createElement("div");
+        row.className = "list-row";
+        if (state.historyIndex === group.entries[group.entries.length - 1].stateIndex) row.classList.add("selected");
+
+        const fold = document.createElement("button");
+        fold.className = "fold-btn";
+        fold.type = "button";
+        fold.textContent = isOpen ? "▾" : "▸";
+        fold.addEventListener("click", (event) => {
+          event.stopPropagation();
+          state.logGroupOpen[group.id] = !isOpen;
+          renderSidePanel();
+        });
+
+        const main = document.createElement("div");
+        main.className = "row-main";
+        const last = group.entries[group.entries.length - 1];
+        main.innerHTML = `
+          <span class="pill neutral">${group.entries.length} actions</span>
+          <div class="row-main-text">
+            <div class="row-title">${last.label}</div>
+            <div class="row-subtitle">States ${group.entries[0].stateIndex}–${last.stateIndex}</div>
+          </div>
+        `;
+        main.addEventListener("click", () => jumpToHistoryState(last.stateIndex));
+        row.appendChild(fold);
+        row.appendChild(main);
+        list.appendChild(row);
+
+        if (isOpen) {
+          const children = document.createElement("div");
+          children.className = "log-children";
+          group.entries.forEach((entry) => {
+            const child = document.createElement("div");
+            child.className = "list-row";
+            if (state.historyIndex === entry.stateIndex) child.classList.add("selected");
+            const childMain = document.createElement("div");
+            childMain.className = "row-main";
+            childMain.innerHTML = `
+              <div class="row-main-text">
+                <div class="row-title">${entry.label}</div>
+                <div class="row-subtitle">State ${entry.stateIndex}</div>
+              </div>
+            `;
+            childMain.addEventListener("click", () => jumpToHistoryState(entry.stateIndex));
+            child.appendChild(childMain);
+            children.appendChild(child);
+          });
+          list.appendChild(children);
+        }
+      });
+
+      sidePanelBody.appendChild(list);
+    }
+
+    function sortElementMetaList(metaList) {
+      if (state.panels.elementSort === "tool") {
+        return [...metaList].sort((a, b) => a.baseLabel.localeCompare(b.baseLabel) || a.timeIndex - b.timeIndex);
+      }
+      return [...metaList].sort((a, b) => a.timeIndex - b.timeIndex);
+    }
+
+    function copyElementsByIds(ids) {
+      const idSet = new Set(ids);
+      const objects = state.scene.objects.filter((object) => idSet.has(object.id));
+      if (!objects.length) return;
+      state.elementClipboard = clone(objects);
+      state.lastClipboardSource = "elements";
+      state.clipboardPasteCount = 0;
+      renderSidePanel();
+    }
+
+    function copySelectedElements() {
+      if (!state.selectedIds.length) return;
+      copyElementsByIds(state.selectedIds);
+    }
+
+    function pasteClipboardElements() {
+      if (!state.elementClipboard?.length) return;
+      const offset = 20 + state.clipboardPasteCount * 10;
+      const groupMap = {};
+      const pasted = state.elementClipboard.map((object) => {
+        const copy = clone(object);
+        copy.id = makeId(copy.type || "item");
+        if (copy.groupId) {
+          if (!groupMap[copy.groupId]) groupMap[copy.groupId] = makeId("group");
+          copy.groupId = groupMap[copy.groupId];
+        }
+        return normalizeObject(translateObject(copy, offset, offset));
+      });
+      const nextScene = clone(state.scene);
+      nextScene.objects.push(...pasted);
+      state.clipboardPasteCount += 1;
+      pushHistory(nextScene, { label: "Paste elements", groupKey: "paste-elements" });
+      setSelection(pasted.map((object) => object.id));
+      renderAll();
+    }
+
+    function deleteSelectedElements() {
+      if (!state.selectedIds.length) return;
+      const removeSet = new Set(state.selectedIds);
+      const nextScene = clone(state.scene);
+      nextScene.objects = nextScene.objects.filter((object) => !removeSet.has(object.id));
+      pushHistory(nextScene, { label: "Delete selection", groupKey: "delete-selection" });
+      setSelection([]);
+      renderAll();
+    }
+
+    function handleElementRowSelection(ids, additive) {
+      if (additive) {
+        const allSelected = ids.every((id) => state.selectedIds.includes(id));
+        if (allSelected) removeFromSelection(ids);
+        else addToSelection(ids);
+      } else {
+        setSelection(ids);
+      }
+      renderAll();
+    }
+
+    function renderElementsPanel() {
+      sidePanelTitle.textContent = "Elements";
+      sidePanelBody.innerHTML = "";
+
+      const toolbar = document.createElement("div");
+      toolbar.className = "panel-toolbar";
+
+      const timeBtn = document.createElement("button");
+      timeBtn.className = `mini-btn ${state.panels.elementSort === "time" ? "active" : ""}`;
+      timeBtn.type = "button";
+      timeBtn.textContent = "Sort: time";
+      timeBtn.addEventListener("click", () => { state.panels.elementSort = "time"; renderSidePanel(); });
+
+      const toolBtn = document.createElement("button");
+      toolBtn.className = `mini-btn ${state.panels.elementSort === "tool" ? "active" : ""}`;
+      toolBtn.type = "button";
+      toolBtn.textContent = "Sort: tool";
+      toolBtn.addEventListener("click", () => { state.panels.elementSort = "tool"; renderSidePanel(); });
+
+      const copyBtn = document.createElement("button");
+      copyBtn.className = "mini-btn";
+      copyBtn.type = "button";
+      copyBtn.textContent = "Copy sel";
+      copyBtn.disabled = !state.selectedIds.length;
+      copyBtn.addEventListener("click", copySelectedElements);
+
+      const pasteBtn = document.createElement("button");
+      pasteBtn.className = "mini-btn";
+      pasteBtn.type = "button";
+      pasteBtn.textContent = "Paste";
+      pasteBtn.disabled = !state.elementClipboard?.length;
+      pasteBtn.addEventListener("click", pasteClipboardElements);
+
+      toolbar.append(timeBtn, toolBtn, copyBtn, pasteBtn);
+      sidePanelBody.appendChild(toolbar);
+
+      const list = document.createElement("div");
+      list.className = "list";
+      const metaList = sortElementMetaList(getElementMetaList(state.scene));
+      metaList.forEach((meta) => {
+        const row = document.createElement("div");
+        row.className = "list-row";
+        if (state.selectedIds.includes(meta.object.id)) row.classList.add("selected");
+
+        const main = document.createElement("div");
+        main.className = "row-main";
+        const subtitleParts = [`${meta.baseLabel}`, `#${meta.timeIndex + 1}`];
+        if (meta.object.groupId) subtitleParts.push("grouped");
+        const detail = describeElement(meta.object);
+        if (detail) subtitleParts.push(detail);
+        main.innerHTML = `
+          ${meta.object.groupId ? '<span class="pill">Group</span>' : ''}
+          <div class="row-main-text">
+            <div class="row-title">${meta.label}</div>
+            <div class="row-subtitle">${subtitleParts.join(" · ")}</div>
+          </div>
+        `;
+        main.addEventListener("click", (event) => {
+          handleElementRowSelection(getSelectableIdsForObject(meta.object), event.ctrlKey || event.metaKey || state.multiSelectMode);
+        });
+
+        const copyOne = document.createElement("button");
+        copyOne.className = "mini-btn";
+        copyOne.type = "button";
+        copyOne.textContent = "Copy";
+        copyOne.addEventListener("click", (event) => {
+          event.stopPropagation();
+          copyElementsByIds(getSelectableIdsForObject(meta.object));
+        });
+
+        row.appendChild(main);
+        row.appendChild(copyOne);
+        list.appendChild(row);
+      });
+
+      sidePanelBody.appendChild(list);
+    }
+
+    function renderSidePanel() {
+      if (!state.panels.open) {
+        sidePanel.classList.remove("show");
+        return;
+      }
+      sidePanel.classList.add("show");
+      if (state.panels.open === "log") renderLogPanel();
+      if (state.panels.open === "elements") renderElementsPanel();
+    }
+
+    function closeLineMenu() {}
+
+    function openLineMenu() {
+      // removed in update 13
+    }
+
+    function renderLineMenu() {}
+
+    function renderAll() {
+      renderTools();
+      renderAttributes();
+      renderCanvas();
+      renderTextEditor();
+      renderSidePanel();
+    }
 
     function updateToolPreference(tool, patch) {
       state.toolPrefs[tool] = { ...(state.toolPrefs[tool] || {}), ...patch };
     }
 
-    function applyAttributesPatch(patch) {
-      const sel = selectedObject();
-      if (sel) {
-        const nextScene = clone(state.scene);
-        const index = nextScene.objects.findIndex((obj) => obj.id === state.selectedId);
-        if (index === -1) return;
-        nextScene.objects[index] = updateSelectedObject(nextScene.objects[index], patch);
-        pushHistory(nextScene);
+    function applyAttributesPatch(inputPatch, actionMeta = {}) {
+      const patch = clone(inputPatch);
+      const selection = selectedObjects();
+      if (patch.fontStyle && state.activeTool === TOOL.TEXT && state.editingText && applyEditingTextFontStyle(patch.fontStyle)) {
         return;
       }
+      if (patch.color && (selection.length || state.activeTool !== TOOL.BACKGROUND)) {
+        rememberExplicitColourChoice(patch.color, selection);
+      }
+      if (selection.length) {
+        const nextScene = clone(state.scene);
+        const idSet = new Set(state.selectedIds);
+        nextScene.objects = nextScene.objects.map((object) => {
+          if (!idSet.has(object.id)) return object;
+          if (patch.color) return updateObjectAttributes(object, applyTargetedColourPatch(object, patch.color));
+          return updateObjectAttributes(object, patch);
+        });
+        pushHistory(nextScene, actionMeta);
+        return;
+      }
+
       if (state.activeTool === TOOL.BACKGROUND && patch.color) {
         const nextScene = clone(state.scene);
         nextScene.backgroundColor = patch.color;
         updateToolPreference(TOOL.BACKGROUND, { color: patch.color });
-        pushHistory(nextScene);
+        pushHistory(nextScene, actionMeta.label ? actionMeta : { label: "Change background colour", groupKey: "background-colour" });
         return;
       }
+
+      if (state.activeTool === TOOL.SHAPE && patch.color) {
+        updateToolPreference(TOOL.SHAPE, applyShapeColourPatchToShape(patch.color));
+        renderAll();
+        return;
+      }
+
+      if (state.activeTool === TOOL.TEXT && patch.color && state.toolPrefs[TOOL.TEXT].boxed && (state.shapeColourTargets.fill || state.shapeColourTargets.stroke)) {
+        updateToolPreference(TOOL.TEXT, applyShapeColourPatchToTextBox(patch.color));
+        if (state.editingText) state.editingText = updateObjectAttributes({ type: "text", ...state.editingText }, applyShapeColourPatchToTextBox(patch.color));
+        renderAll();
+        return;
+      }
+
       if (state.activeTool) {
         updateToolPreference(state.activeTool, patch);
+        if (state.activeTool === TOOL.TEXT && state.editingText) {
+          state.editingText = updateObjectAttributes({ type: "text", ...state.editingText }, patch);
+          if (typeof patch.boxed === "boolean") syncEditingTextColour();
+        }
+        if (typeof patch.boxed === "boolean") applySharedColourToCurrentContext();
         renderAll();
       }
     }
 
     function startTextAt(worldPoint) {
-      state.editingText = {
+      const prefs = state.toolPrefs[TOOL.TEXT];
+      state.editingText = normalizeTextObject({
         x: worldPoint.x,
         y: worldPoint.y,
         text: "",
-        size: state.toolPrefs[TOOL.TEXT].size,
-        color: state.toolPrefs[TOOL.TEXT].color,
-        alpha: state.toolPrefs[TOOL.TEXT].alpha,
-      };
+        size: prefs.size,
+        color: prefs.color,
+        alpha: prefs.alpha,
+        fontStyle: prefs.fontStyle,
+        align: prefs.align,
+        boxed: prefs.boxed,
+        boxFillColor: prefs.boxFillColor,
+        boxStrokeColor: prefs.boxStrokeColor,
+        boxStroke: prefs.boxStroke,
+        width: prefs.width,
+        height: prefs.height,
+      });
       renderTextEditor();
       requestAnimationFrame(() => textEditor.focus());
       setTimeout(() => textEditor.focus(), 0);
     }
 
     function commitEditingText() {
+      if (state.editingText) syncEditingTextFromEditorDom();
       if (!state.editingText || !state.editingText.text.trim()) {
         state.editingText = null;
         renderTextEditor();
         return;
       }
+      updateTextEditorBoxMetricsFromDom();
       const nextScene = clone(state.scene);
-      const newTextObject = {
+      const newTextObject = normalizeTextObject({
         id: makeId("text"), type: "text", x: state.editingText.x, y: state.editingText.y,
         text: state.editingText.text, size: state.editingText.size, color: state.editingText.color, alpha: state.editingText.alpha,
-      };
+        fontStyle: state.editingText.fontStyle, align: state.editingText.align, boxed: state.editingText.boxed,
+        boxFillColor: state.editingText.boxFillColor, boxStrokeColor: state.editingText.boxStrokeColor, boxStroke: state.editingText.boxStroke,
+        textRuns: state.editingText.textRuns,
+        width: state.editingText.width, height: state.editingText.height,
+      });
       nextScene.objects.push(newTextObject);
-      pushHistory(nextScene);
-      state.selectedId = newTextObject.id;
+      pushHistory(nextScene, { label: "Add text" });
+      state.toolPrefs[TOOL.TEXT] = { ...state.toolPrefs[TOOL.TEXT], width: newTextObject.width, height: newTextObject.height };
       state.editingText = null;
+      setSelection([newTextObject.id]);
       renderAll();
     }
 
     function toggleTool(tool) {
       if (state.activeTool === TOOL.TEXT && state.editingText) commitEditingText();
-      if (tool === "select") {
-        const next = !state.selectMode;
-        state.selectMode = next;
+
+      if (tool === TOOL.GROUP) {
+        groupSelection();
+        return;
+      }
+
+      if (tool === TOOL.SELECT) {
+        const makeInactive = state.selectMode && !state.multiSelectMode;
+        state.selectMode = !makeInactive;
+        state.multiSelectMode = false;
         state.activeTool = null;
         state.draft = null;
         state.interaction = null;
-        if (!next) state.selectedId = null;
+        if (!state.selectMode) setSelection([]);
         renderAll();
         return;
       }
+
+      if (tool === TOOL.MULTI_SELECT) {
+        const makeInactive = state.selectMode && state.multiSelectMode;
+        state.selectMode = !makeInactive;
+        state.multiSelectMode = !makeInactive;
+        state.activeTool = null;
+        state.draft = null;
+        state.interaction = null;
+        if (!state.selectMode) setSelection([]);
+        renderAll();
+        return;
+      }
+
       const nextTool = state.activeTool === tool ? null : tool;
       state.activeTool = nextTool;
       state.selectMode = false;
+      state.multiSelectMode = false;
       state.draft = null;
       state.interaction = null;
-      state.selectedId = null;
+      setSelection([]);
+      applySharedColourToCurrentContext();
       renderAll();
     }
 
@@ -1046,7 +2506,7 @@
       updateToolPreference(TOOL.BACKGROUND, { color: "#ffffff" });
       state.scene = { backgroundColor: "#ffffff", objects: [] };
       initHistory();
-      state.selectedId = null;
+      setSelection([]);
       state.draft = null;
       state.interaction = null;
       state.editingText = null;
@@ -1067,9 +2527,9 @@
         const nextScene = clone(state.scene);
         const object = { id: makeId("img"), type: "image", dataUrl, x: center.x - width / 2, y: center.y - height / 2, width, height, alpha: 100 };
         nextScene.objects.push(object);
-        pushHistory(nextScene);
-        state.selectedId = object.id;
+        pushHistory(nextScene, { label: "Insert image" });
         state.toolPrefs.image = { ...state.toolPrefs.image, scalePercent: 100, alpha: 100 };
+        setSelection([object.id]);
         renderAll();
       };
       img.src = dataUrl;
@@ -1085,18 +2545,26 @@
     }
 
     async function pasteImageFromClipboard() {
-      if (!navigator.clipboard?.read) return;
+      if (!navigator.clipboard?.read) return false;
       try {
         const items = await navigator.clipboard.read();
         const imageItem = items.find((item) => item.types.some((type) => type.startsWith("image/")));
-        if (!imageItem) return;
+        if (!imageItem) return false;
         const imageType = imageItem.types.find((type) => type.startsWith("image/"));
         const blob = await imageItem.getType(imageType);
-        const reader = new FileReader();
-        reader.onload = () => addImage(reader.result);
-        reader.readAsDataURL(blob);
+        await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => {
+            addImage(reader.result);
+            resolve();
+          };
+          reader.onerror = reject;
+          reader.readAsDataURL(blob);
+        });
+        state.lastClipboardSource = "image";
+        return true;
       } catch {
-        // ignore clipboard failure
+        return false;
       }
     }
 
@@ -1106,7 +2574,7 @@
       const currentPercent = state.toolPrefs.image.scalePercent || 100;
       const ratio = percent / currentPercent;
       const nextScene = clone(state.scene);
-      const target = nextScene.objects.find((obj) => obj.id === state.selectedId);
+      const target = nextScene.objects.find((obj) => obj.id === sel.id);
       if (!target) return;
       const cx = target.x + target.width / 2;
       const cy = target.y + target.height / 2;
@@ -1115,7 +2583,7 @@
       target.x = cx - target.width / 2;
       target.y = cy - target.height / 2;
       state.toolPrefs.image = { ...state.toolPrefs.image, scalePercent: percent };
-      pushHistory(nextScene);
+      pushHistory(nextScene, { label: "Resize image", groupKey: "resize-image" });
     }
 
     function buildShapeObject(start, end) {
@@ -1129,13 +2597,20 @@
         rect = rectFromPoints(start, end);
         if (["circle", "square", "hexagon"].includes(prefs.shape)) {
           const side = Math.max(rect.w, rect.h);
-          rect.w = side; rect.h = side;
+          const extendX = end.x >= start.x ? 1 : -1;
+          const extendY = end.y >= start.y ? 1 : -1;
+          rect = {
+            x: start.x + (extendX < 0 ? -side : 0),
+            y: start.y + (extendY < 0 ? -side : 0),
+            w: side,
+            h: side,
+          };
         }
       }
-      return {
+      return normalizeShapeObject({
         id: makeId("shape"), type: "shape", x: rect.x, y: rect.y, w: rect.w, h: rect.h,
-        shape: prefs.shape, color: prefs.color, stroke: prefs.stroke || 3, solid: prefs.solid ?? true, alpha: prefs.alpha ?? 100,
-      };
+        shape: prefs.shape, fillColor: prefs.fillColor, strokeColor: prefs.strokeColor, stroke: prefs.stroke || 3, alpha: prefs.alpha ?? 100,
+      });
     }
 
     function renderExportCanvas() {
@@ -1145,10 +2620,14 @@
       const exportCtx = exportCanvas.getContext("2d");
       const exportScene = clone(state.scene);
       if (state.editingText && state.editingText.text.trim()) {
-        exportScene.objects.push({
+        exportScene.objects.push(normalizeTextObject({
           id: "text_preview_export", type: "text", x: state.editingText.x, y: state.editingText.y,
           text: state.editingText.text, size: state.editingText.size, color: state.editingText.color, alpha: state.editingText.alpha,
-        });
+          fontStyle: state.editingText.fontStyle, align: state.editingText.align, boxed: state.editingText.boxed,
+          boxFillColor: state.editingText.boxFillColor, boxStrokeColor: state.editingText.boxStrokeColor, boxStroke: state.editingText.boxStroke,
+          textRuns: state.editingText.textRuns,
+          width: state.editingText.width, height: state.editingText.height,
+        }));
       }
       const backgroundRect = {
         x: -state.view.offsetX / state.view.scale,
@@ -1185,9 +2664,143 @@
         const blob = await new Promise((resolve) => exportCanvas.toBlob(resolve, "image/png"));
         if (!blob || !navigator.clipboard?.write || !window.ClipboardItem) return;
         await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
+        state.lastClipboardSource = "image";
       } catch {
         // ignore
       }
+    }
+
+    async function pasteLatestClipboard() {
+      if (state.lastClipboardSource === "elements" && state.elementClipboard?.length) {
+        pasteClipboardElements();
+        return true;
+      }
+      if (await pasteImageFromClipboard()) return true;
+      if (state.elementClipboard?.length) {
+        pasteClipboardElements();
+        return true;
+      }
+      return false;
+    }
+
+    function isAdditiveSelection(event) {
+      return state.multiSelectMode || event.ctrlKey || event.metaKey;
+    }
+
+    function maybeStartLongPressLineMenu() {
+      return null;
+    }
+
+    function clearLongPressTimer(interaction) {
+      if (interaction?.longPressTimer) {
+        window.clearTimeout(interaction.longPressTimer);
+        interaction.longPressTimer = null;
+      }
+    }
+
+    function groupSelection() {
+      if (state.selectedIds.length < 2) return;
+      const nextScene = clone(state.scene);
+      const groupId = makeId("group");
+      const selectedSet = new Set(state.selectedIds);
+      nextScene.objects = nextScene.objects.map((object) => selectedSet.has(object.id) ? { ...object, groupId } : object);
+      pushHistory(nextScene, { label: "Group elements" });
+      renderAll();
+    }
+
+    function buildCutPreview(start, end) {
+      const rect = rectFromPoints(start, end);
+      return normalizeShapeObject({
+        id: "cut_preview",
+        type: "shape",
+        x: rect.x,
+        y: rect.y,
+        w: rect.w,
+        h: rect.h,
+        shape: "rectangle",
+        fillColor: "#94a3b8",
+        strokeColor: "#111111",
+        stroke: 2,
+        alpha: 20,
+      });
+    }
+
+    function performCutRect(start, end) {
+      const rect = rectFromPoints(start, end);
+      if (rect.w < 2 || rect.h < 2) return;
+      const screenA = worldToScreen({ x: rect.x, y: rect.y });
+      const screenB = worldToScreen({ x: rect.x + rect.w, y: rect.y + rect.h });
+      const sx = Math.max(0, Math.round(Math.min(screenA.x, screenB.x)));
+      const sy = Math.max(0, Math.round(Math.min(screenA.y, screenB.y)));
+      const sw = Math.max(1, Math.round(Math.abs(screenB.x - screenA.x)));
+      const sh = Math.max(1, Math.round(Math.abs(screenB.y - screenA.y)));
+      const rendered = renderExportCanvas();
+      const cropCanvas = document.createElement("canvas");
+      cropCanvas.width = sw;
+      cropCanvas.height = sh;
+      const cropCtx = cropCanvas.getContext("2d");
+      cropCtx.drawImage(rendered, sx, sy, sw, sh, 0, 0, sw, sh);
+      const dataUrl = cropCanvas.toDataURL("image/png");
+
+      const nextScene = clone(state.scene);
+      nextScene.objects.push(normalizeShapeObject({
+        id: makeId("shape"),
+        type: "shape",
+        x: rect.x,
+        y: rect.y,
+        w: rect.w,
+        h: rect.h,
+        shape: "rectangle",
+        fillColor: nextScene.backgroundColor,
+        strokeColor: nextScene.backgroundColor,
+        stroke: 0,
+        alpha: 100,
+      }));
+      const imageObject = {
+        id: makeId("img"),
+        type: "image",
+        dataUrl,
+        x: rect.x,
+        y: rect.y,
+        width: rect.w,
+        height: rect.h,
+        alpha: 100,
+      };
+      nextScene.objects.push(imageObject);
+      pushHistory(nextScene, { label: "Cut area" });
+      setSelection([imageObject.id]);
+      renderAll();
+    }
+
+    function beginSelectionInteraction(event, hitObject, screenPoint, worldPoint) {
+      const additive = isAdditiveSelection(event);
+      const hitIds = getSelectableIdsForObject(hitObject);
+      const selectionBefore = [...state.selectedIds];
+      const hitWasAlreadySelected = selectionBefore.includes(hitObject.id);
+      const allSelected = hitIds.every((id) => state.selectedIds.includes(id));
+      let moveIds = hitIds;
+      if (additive) {
+        if (allSelected) removeFromSelection(hitIds);
+        else addToSelection(hitIds);
+      } else if (hitWasAlreadySelected && selectionBefore.length) {
+        setSelection(selectionBefore);
+        moveIds = selectionBefore;
+      } else {
+        setSelection(hitIds);
+      }
+      const activeAfterSelection = moveIds.every((id) => state.selectedIds.includes(id));
+      state.interaction = {
+        kind: "selectHold",
+        startWorld: worldPoint,
+        startScreen: screenPoint,
+        baseScene: clone(state.scene),
+        hitId: hitObject.id,
+        moveIds: [...moveIds],
+        canMove: activeAfterSelection,
+        longPressTimer: null,
+      };
+      canvas.setPointerCapture?.(event.pointerId);
+      renderAll();
     }
 
     function onPointerDown(event) {
@@ -1215,17 +2828,15 @@
       if (state.editingText) commitEditingText();
 
       if (state.selectMode) {
-        const hit = [...state.scene.objects].reverse().find((obj) => hitTestObject(obj, worldPoint)) || null;
+        const hit = [...state.scene.objects].reverse().find((object) => hitTestObject(object, worldPoint)) || null;
         if (hit) {
-          state.selectedId = hit.id;
-          state.interaction = { kind: "selectMove", id: hit.id, startWorld: worldPoint, baseScene: clone(state.scene) };
-          canvas.setPointerCapture?.(event.pointerId);
+          beginSelectionInteraction(event, hit, screenPoint, worldPoint);
         } else {
-          state.selectedId = null;
+          if (!isAdditiveSelection(event)) setSelection([]);
           state.interaction = { kind: "pan", startScreen: screenPoint, startOffsetX: state.view.offsetX, startOffsetY: state.view.offsetY };
           canvas.setPointerCapture?.(event.pointerId);
+          renderAll();
         }
-        renderAll();
         return;
       }
 
@@ -1233,7 +2844,15 @@
       if (state.activeTool === TOOL.BRUSH) {
         const points = [worldPoint];
         state.interaction = { kind: "brush", points };
-        state.draft = { type: "brush", points, size: prefs.size, shape: prefs.shape, color: prefs.color, alpha: prefs.alpha };
+        state.draft = { type: "brush", points, size: prefs.size, shape: "circle", color: prefs.color, alpha: prefs.alpha, startHead: !!prefs.startHead, endHead: !!prefs.endHead };
+        canvas.setPointerCapture?.(event.pointerId);
+        renderCanvas();
+        return;
+      }
+      if (state.activeTool === TOOL.ERASER) {
+        const points = [worldPoint];
+        state.interaction = { kind: "eraser", points };
+        state.draft = { type: "eraser", points, size: prefs.size, shape: prefs.shape, alpha: 100 };
         canvas.setPointerCapture?.(event.pointerId);
         renderCanvas();
         return;
@@ -1245,14 +2864,25 @@
         renderCanvas();
         return;
       }
+      if (state.activeTool === TOOL.CUT) {
+        state.interaction = { kind: "cut", start: worldPoint };
+        state.draft = buildCutPreview(worldPoint, worldPoint);
+        canvas.setPointerCapture?.(event.pointerId);
+        renderCanvas();
+        return;
+      }
       if (state.activeTool === TOOL.LINE || state.activeTool === TOOL.ARROW_ONE || state.activeTool === TOOL.ARROW_TWO) {
         state.interaction = { kind: "dragLine", start: worldPoint, tool: state.activeTool };
-        state.draft = state.activeTool === TOOL.LINE
-          ? { type: "line", start: worldPoint, end: worldPoint, color: prefs.color, size: prefs.size, alpha: prefs.alpha }
-          : {
-              type: "arrow", start: worldPoint, end: worldPoint, color: prefs.color, size: prefs.size, alpha: prefs.alpha,
-              startHead: state.activeTool === TOOL.ARROW_TWO, endHead: true,
-            };
+        state.draft = {
+          type: state.activeTool === TOOL.LINE ? "line" : "arrow",
+          start: worldPoint,
+          end: worldPoint,
+          color: prefs.color,
+          size: prefs.size,
+          alpha: prefs.alpha,
+          startHead: !!prefs.startHead,
+          endHead: !!prefs.endHead,
+        };
         canvas.setPointerCapture?.(event.pointerId);
         renderCanvas();
         return;
@@ -1297,23 +2927,42 @@
         renderAll();
         return;
       }
+
+      if (state.interaction.kind === "selectHold") {
+        const moveDist = distance(screenPoint, state.interaction.startScreen);
+        if (moveDist > 5) {
+          clearLongPressTimer(state.interaction);
+          if (state.interaction.canMove && state.selectedIds.length) {
+            state.interaction.kind = "selectMove";
+          } else {
+            return;
+          }
+        } else {
+          return;
+        }
+      }
+
       if (state.interaction.kind === "selectMove") {
         const dx = worldPoint.x - state.interaction.startWorld.x;
         const dy = worldPoint.y - state.interaction.startWorld.y;
         const nextScene = clone(state.interaction.baseScene);
-        const index = nextScene.objects.findIndex((obj) => obj.id === state.interaction.id);
-        if (index !== -1) {
-          nextScene.objects[index] = translateObject(nextScene.objects[index], dx, dy);
-          state.scene = nextScene;
-          renderAll();
-        }
+        const selectedSet = new Set(state.interaction.moveIds || state.selectedIds);
+        nextScene.objects = nextScene.objects.map((object) => selectedSet.has(object.id) ? translateObject(object, dx, dy) : object);
+        state.scene = nextScene;
+        renderAll();
         return;
       }
 
       const prefs = activePrefs();
       if (state.interaction.kind === "brush") {
         state.interaction.points = [...state.interaction.points, worldPoint];
-        state.draft = { type: "brush", points: state.interaction.points, size: prefs.size, shape: prefs.shape, color: prefs.color, alpha: prefs.alpha };
+        state.draft = { type: "brush", points: state.interaction.points, size: prefs.size, shape: "circle", color: prefs.color, alpha: prefs.alpha, startHead: !!prefs.startHead, endHead: !!prefs.endHead };
+        renderCanvas();
+        return;
+      }
+      if (state.interaction.kind === "eraser") {
+        state.interaction.points = [...state.interaction.points, worldPoint];
+        state.draft = { type: "eraser", points: state.interaction.points, size: prefs.size, shape: prefs.shape, alpha: 100 };
         renderCanvas();
         return;
       }
@@ -1322,10 +2971,22 @@
         renderCanvas();
         return;
       }
+      if (state.interaction.kind === "cut") {
+        state.draft = buildCutPreview(state.interaction.start, worldPoint);
+        renderCanvas();
+        return;
+      }
       if (state.interaction.kind === "dragLine") {
-        state.draft = state.interaction.tool === TOOL.LINE
-          ? { type: "line", start: state.interaction.start, end: worldPoint, color: prefs.color, size: prefs.size, alpha: prefs.alpha }
-          : { type: "arrow", start: state.interaction.start, end: worldPoint, color: prefs.color, size: prefs.size, alpha: prefs.alpha, startHead: state.interaction.tool === TOOL.ARROW_TWO, endHead: true };
+        state.draft = {
+          type: state.interaction.tool === TOOL.LINE ? "line" : "arrow",
+          start: state.interaction.start,
+          end: worldPoint,
+          color: prefs.color,
+          size: prefs.size,
+          alpha: prefs.alpha,
+          startHead: !!prefs.startHead,
+          endHead: !!prefs.endHead,
+        };
         renderCanvas();
       }
     }
@@ -1344,53 +3005,140 @@
         canvas.releasePointerCapture?.(event.pointerId);
         return;
       }
-      if (state.interaction.kind === "selectMove") {
-        pushHistory(clone(state.scene));
+
+      if (state.interaction.kind === "selectHold") {
+        clearLongPressTimer(state.interaction);
         state.interaction = null;
-        canvas.releasePointerCapture?.(event.pointerId);
-        return;
-      }
-      if (state.interaction.kind === "brush") {
-        const nextScene = clone(state.scene);
-        const newBrush = { id: makeId("brush"), type: "brush", points: state.interaction.points.length ? state.interaction.points : [worldPoint], size: prefs.size, shape: prefs.shape, color: prefs.color, alpha: prefs.alpha };
-        nextScene.objects.push(newBrush);
-        pushHistory(nextScene);
-        state.selectedId = newBrush.id;
-        state.interaction = null;
-        state.draft = null;
         canvas.releasePointerCapture?.(event.pointerId);
         renderAll();
         return;
       }
+
+      if (state.interaction.kind === "selectMove") {
+        pushHistory(clone(state.scene), { label: "Move selection", groupKey: "move-selection" });
+        state.interaction = null;
+        canvas.releasePointerCapture?.(event.pointerId);
+        return;
+      }
+
+      if (state.interaction.kind === "brush") {
+        const nextScene = clone(state.scene);
+        const newBrush = {
+          id: makeId("brush"),
+          type: "brush",
+          points: state.interaction.points.length ? state.interaction.points : [worldPoint],
+          size: prefs.size,
+          shape: "circle",
+          color: prefs.color,
+          alpha: prefs.alpha,
+          startHead: !!prefs.startHead,
+          endHead: !!prefs.endHead,
+        };
+        nextScene.objects.push(newBrush);
+        pushHistory(nextScene, { label: "Draw brush" });
+        state.interaction = null;
+        state.draft = null;
+        setSelection([newBrush.id]);
+        canvas.releasePointerCapture?.(event.pointerId);
+        renderAll();
+        return;
+      }
+
+      if (state.interaction.kind === "eraser") {
+        const nextScene = clone(state.scene);
+        const newEraser = {
+          id: makeId("eraser"),
+          type: "eraser",
+          points: state.interaction.points.length ? state.interaction.points : [worldPoint],
+          size: prefs.size,
+          shape: prefs.shape,
+          alpha: 100,
+        };
+        nextScene.objects.push(newEraser);
+        pushHistory(nextScene, { label: "Erase" });
+        state.interaction = null;
+        state.draft = null;
+        setSelection([newEraser.id]);
+        canvas.releasePointerCapture?.(event.pointerId);
+        renderAll();
+        return;
+      }
+
       if (state.interaction.kind === "shape") {
         const nextScene = clone(state.scene);
         const newShape = buildShapeObject(state.interaction.start, worldPoint);
         nextScene.objects.push(newShape);
-        pushHistory(nextScene);
-        state.selectedId = newShape.id;
+        pushHistory(nextScene, { label: "Draw shape" });
         state.interaction = null;
         state.draft = null;
+        setSelection([newShape.id]);
         canvas.releasePointerCapture?.(event.pointerId);
         renderAll();
         return;
       }
-      if (state.interaction.kind === "dragLine") {
-        const nextScene = clone(state.scene);
-        const object = state.interaction.tool === TOOL.LINE
-          ? { id: makeId("line"), type: "line", start: state.interaction.start, end: worldPoint, color: prefs.color, size: prefs.size, alpha: prefs.alpha }
-          : { id: makeId("arrow"), type: "arrow", start: state.interaction.start, end: worldPoint, color: prefs.color, size: prefs.size, alpha: prefs.alpha, startHead: state.interaction.tool === TOOL.ARROW_TWO, endHead: true };
-        nextScene.objects.push(object);
-        pushHistory(nextScene);
-        state.selectedId = object.id;
+
+      if (state.interaction.kind === "cut") {
+        performCutRect(state.interaction.start, worldPoint);
         state.interaction = null;
         state.draft = null;
+        canvas.releasePointerCapture?.(event.pointerId);
+        return;
+      }
+
+      if (state.interaction.kind === "dragLine") {
+        const nextScene = clone(state.scene);
+        const object = {
+          id: makeId(state.interaction.tool === TOOL.LINE ? "line" : "arrow"),
+          type: state.interaction.tool === TOOL.LINE ? "line" : "arrow",
+          start: state.interaction.start,
+          end: worldPoint,
+          color: prefs.color,
+          size: prefs.size,
+          alpha: prefs.alpha,
+          startHead: !!prefs.startHead,
+          endHead: !!prefs.endHead,
+        };
+        nextScene.objects.push(object);
+        pushHistory(nextScene, { label: state.interaction.tool === TOOL.LINE ? "Draw line" : "Draw arrow" });
+        state.interaction = null;
+        state.draft = null;
+        setSelection([object.id]);
         canvas.releasePointerCapture?.(event.pointerId);
         renderAll();
       }
     }
 
+    function setLineArrowSetting(key, checked) {
+      applyAttributesPatch({ [key]: checked }, { label: "Toggle line arrowhead", groupKey: "line-arrowhead" });
+    }
+
     textEditor.addEventListener("input", () => {
-      if (state.editingText) state.editingText.text = textEditor.value;
+      if (state.editingText) {
+        syncEditingTextFromEditorDom();
+        updateTextEditorBoxMetricsFromDom();
+        state.editingText = ensureTextBoxFitsContent(state.editingText);
+        renderTextEditor();
+      }
+    });
+    textEditor.addEventListener("keydown", (event) => {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        insertPlainTextIntoEditor("\n");
+      }
+    });
+    textEditor.addEventListener("paste", (event) => {
+      const text = event.clipboardData?.getData("text/plain");
+      if (typeof text !== "string") return;
+      event.preventDefault();
+      event.stopPropagation();
+      insertPlainTextIntoEditor(text);
+    });
+    textEditor.addEventListener("mouseup", () => {
+      if (state.editingText) {
+        updateTextEditorBoxMetricsFromDom();
+        state.editingText = ensureTextBoxFitsContent(state.editingText);
+        renderTextEditor();
+      }
     });
     textEditor.addEventListener("blur", () => {
       if (state.activeTool === TOOL.TEXT) {
@@ -1406,24 +3154,46 @@
       if (state.historyIndex === 0) return;
       state.historyIndex -= 1;
       state.scene = clone(state.history[state.historyIndex]);
-      state.draft = null; state.interaction = null; state.editingText = null; state.selectedId = null;
+      state.draft = null;
+      state.interaction = null;
+      state.editingText = null;
+      setSelection([]);
       renderAll();
     });
     $("redoBtn").addEventListener("click", () => {
       if (state.historyIndex >= state.history.length - 1) return;
       state.historyIndex += 1;
       state.scene = clone(state.history[state.historyIndex]);
-      state.draft = null; state.interaction = null; state.editingText = null; state.selectedId = null;
+      state.draft = null;
+      state.interaction = null;
+      state.editingText = null;
+      setSelection([]);
       renderAll();
     });
+    $("elementsBtn").addEventListener("click", () => {
+      state.panels.open = state.panels.open === "elements" ? null : "elements";
+      renderAll();
+    });
+    $("logBtn").addEventListener("click", () => {
+      state.panels.open = state.panels.open === "log" ? null : "log";
+      renderAll();
+    });
+    $("closePanelBtn").addEventListener("click", () => {
+      state.panels.open = null;
+      renderAll();
+    });
+
     $("uploadBtn").addEventListener("click", () => fileInput.click());
-    $("pasteBtn").addEventListener("click", pasteImageFromClipboard);
+    $("pasteBtn").addEventListener("click", () => { pasteLatestClipboard(); });
     $("saveBtn").addEventListener("click", saveCanvas);
     $("copyBtn").addEventListener("click", copyCanvas);
     $("clearBtn").addEventListener("click", () => confirmOverlay.classList.add("show"));
     $("cancelClearBtn").addEventListener("click", () => confirmOverlay.classList.remove("show"));
     $("confirmClearBtn").addEventListener("click", clearCanvasNow);
     fileInput.addEventListener("change", handleImageUpload);
+
+    $("lineStartHeadToolInput").addEventListener("change", (event) => setLineArrowSetting("startHead", event.target.checked));
+    $("lineEndHeadToolInput").addEventListener("change", (event) => setLineArrowSetting("endHead", event.target.checked));
 
     function bindStepper(inputId, upId, downId, min, max, apply) {
       const input = $(inputId), up = $(upId), down = $(downId);
@@ -1432,18 +3202,33 @@
       down.addEventListener("click", () => apply(clamp((Number(input.value) || 0) - 1, min, max)));
     }
 
+    function bindSingleStepper(inputId, upId, min, max, apply) {
+      const input = $(inputId), up = $(upId);
+      input.addEventListener("change", () => apply(clamp(Number(input.value) || 0, min, max)));
+      up.addEventListener("click", () => apply(clamp((Number(input.value) || 0) + 1, min, max)));
+    }
+
     bindStepper("sizeInput", "sizeUp", "sizeDown", 1, 300, (value) => {
       const sel = selectedObject();
       if (sel && sel.type === "image") resizeSelectedImage(value);
-      else applyAttributesPatch({ size: value });
+      else applyAttributesPatch({ size: value }, { label: "Change size", groupKey: "attr-size" });
     });
-    bindStepper("strokeInput", "strokeUp", "strokeDown", 0, 60, (value) => applyAttributesPatch({ stroke: value }));
-    bindStepper("bgR", "bgRUp", "bgRDown", 0, 255, (value) => applyAttributesPatch({ color: rgbToHex(value, Number($("bgG").value), Number($("bgB").value)) }));
-    bindStepper("bgG", "bgGUp", "bgGDown", 0, 255, (value) => applyAttributesPatch({ color: rgbToHex(Number($("bgR").value), value, Number($("bgB").value)) }));
-    bindStepper("bgB", "bgBUp", "bgBDown", 0, 255, (value) => applyAttributesPatch({ color: rgbToHex(Number($("bgR").value), Number($("bgG").value), value) }));
+    bindStepper("strokeInput", "strokeUp", "strokeDown", 0, 60, (value) => applyAttributesPatch({ stroke: value }, { label: "Change stroke width", groupKey: "attr-stroke" }));
+    bindStepper("bgR", "bgRUp", "bgRDown", 0, 255, (value) => applyAttributesPatch({ color: rgbToHex(value, Number($("bgG").value), Number($("bgB").value)) }, { label: "Change background colour", groupKey: "background-colour" }));
+    bindStepper("bgG", "bgGUp", "bgGDown", 0, 255, (value) => applyAttributesPatch({ color: rgbToHex(Number($("bgR").value), value, Number($("bgB").value)) }, { label: "Change background colour", groupKey: "background-colour" }));
+    bindStepper("bgB", "bgBUp", "bgBDown", 0, 255, (value) => applyAttributesPatch({ color: rgbToHex(Number($("bgR").value), Number($("bgG").value), value) }, { label: "Change background colour", groupKey: "background-colour" }));
 
-    $("alphaInput").addEventListener("input", (e) => applyAttributesPatch({ alpha: Number(e.target.value) }));
-    $("solidInput").addEventListener("change", (e) => applyAttributesPatch({ solid: e.target.checked }));
+    $("alphaInput").addEventListener("input", (event) => applyAttributesPatch({ alpha: Number(event.target.value) }, { label: "Change alpha", groupKey: "attr-alpha" }));
+    $("fillTargetInput").addEventListener("change", (event) => {
+      state.shapeColourTargets.fill = event.target.checked;
+      applySharedColourToCurrentContext();
+      renderAll();
+    });
+    $("strokeTargetInput").addEventListener("change", (event) => {
+      state.shapeColourTargets.stroke = event.target.checked;
+      applySharedColourToCurrentContext();
+      renderAll();
+    });
 
     canvas.addEventListener("pointerdown", onPointerDown);
     canvas.addEventListener("pointermove", onPointerMove);
@@ -1457,14 +3242,40 @@
       zoomAt(point, state.view.scale * factor);
     }, { passive: false });
 
+    function isTextEntryTarget(target) {
+      return !!target && (
+        target === textEditor ||
+        target.tagName === "INPUT" ||
+        target.tagName === "TEXTAREA" ||
+        target.isContentEditable
+      );
+    }
+
     window.addEventListener("keydown", (event) => {
       if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "z") {
         event.preventDefault();
         if (event.shiftKey) $("redoBtn").click(); else $("undoBtn").click();
+        return;
       }
       if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "y") {
         event.preventDefault();
         $("redoBtn").click();
+        return;
+      }
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "c" && !state.editingText && state.selectedIds.length) {
+        event.preventDefault();
+        copySelectedElements();
+        return;
+      }
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "v" && !state.editingText && state.lastClipboardSource === "elements" && state.elementClipboard?.length) {
+        event.preventDefault();
+        pasteClipboardElements();
+        return;
+      }
+      if (event.key === "Delete" && !state.editingText && state.selectedIds.length && !isTextEntryTarget(event.target)) {
+        event.preventDefault();
+        deleteSelectedElements();
+        return;
       }
       if (event.key === "Escape") {
         if (state.activeTool === TOOL.TEXT && state.editingText) commitEditingText();
@@ -1478,15 +3289,25 @@
     });
 
     window.addEventListener("paste", (event) => {
+      if (isTextEntryTarget(event.target) || state.editingText) return;
       const items = event.clipboardData?.items || [];
       const imageItem = [...items].find((item) => item.type.startsWith("image/"));
-      if (!imageItem) return;
-      event.preventDefault();
-      const file = imageItem.getAsFile();
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = () => addImage(reader.result);
-      reader.readAsDataURL(file);
+      if (imageItem) {
+        event.preventDefault();
+        const file = imageItem.getAsFile();
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = () => {
+          state.lastClipboardSource = "image";
+          addImage(reader.result);
+        };
+        reader.readAsDataURL(file);
+        return;
+      }
+      if (state.lastClipboardSource === "elements" && state.elementClipboard?.length) {
+        event.preventDefault();
+        pasteClipboardElements();
+      }
     });
 
     initHistory();
