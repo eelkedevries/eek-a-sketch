@@ -411,10 +411,24 @@
       border-radius: 6px;
       cursor: pointer;
       background: #fff;
+      position: relative;
+      overflow: hidden;
     }
     .swatch.active {
       border-color: #111;
       box-shadow: 0 0 0 2px #111 inset;
+    }
+    .swatch.no-colour,
+    .target-preview.no-colour {
+      background: #fff !important;
+    }
+    .swatch.no-colour::after,
+    .target-preview.no-colour::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, transparent 46%, #dc2626 46%, #dc2626 54%, transparent 54%);
+      pointer-events: none;
     }
 
     .checkbox-row {
@@ -428,23 +442,36 @@
       grid-template-columns: repeat(2, minmax(0,1fr));
       gap: 6px;
     }
-    .checkbox-chip {
+    .target-chip {
       display: flex;
       align-items: center;
+      justify-content: center;
       gap: 6px;
       min-height: 28px;
       padding: 4px 6px;
       border: 1px solid var(--border);
       border-radius: 8px;
       background: #fff;
+      color: var(--text);
+      font: inherit;
       font-size: 11px;
+      cursor: pointer;
     }
-    .checkbox-chip .target-preview {
+    .target-chip:hover { background: #f8fafc; }
+    .target-chip.active {
+      background: var(--active);
+      border-color: var(--active);
+      color: #fff;
+    }
+    .target-preview {
       width: 10px;
       height: 10px;
+      position: relative;
       border-radius: 3px;
       border: 1px solid rgba(15,23,42,.2);
       flex: 0 0 auto;
+      background: #fff;
+      overflow: hidden;
     }
 
     #textEditor {
@@ -568,16 +595,14 @@
           <div id="shapeTargetField" class="field" style="display:none">
             <div class="field-label">Colour target</div>
             <div class="checkbox-grid">
-              <label class="checkbox-chip">
-                <input id="fillTargetInput" type="checkbox" />
+              <button id="fillTargetBtn" class="target-chip" type="button">
                 <span class="target-preview" id="fillPreview"></span>
                 <span>Fill</span>
-              </label>
-              <label class="checkbox-chip">
-                <input id="strokeTargetInput" type="checkbox" />
+              </button>
+              <button id="strokeTargetBtn" class="target-chip" type="button">
                 <span class="target-preview" id="strokePreview"></span>
                 <span>Stroke</span>
-              </label>
+              </button>
             </div>
           </div>
 
@@ -712,25 +737,31 @@
       SELECT: "select",
       MULTI_SELECT: "multiSelect",
       GROUP: "group",
+      UNGROUP: "ungroup",
+      COPY: "copySelection",
     };
 
     const TOOL_ORDER = [
       TOOL.SELECT,
       TOOL.MULTI_SELECT,
       TOOL.GROUP,
+      TOOL.UNGROUP,
+      TOOL.CUT,
+      TOOL.COPY,
       TOOL.BRUSH,
-      TOOL.ERASER,
       TOOL.LINE,
       TOOL.SHAPE,
-      TOOL.CUT,
       TOOL.TEXT,
       TOOL.BACKGROUND,
+      TOOL.ERASER,
     ];
 
     const TOOL_LABEL = {
       [TOOL.SELECT]: "Select",
       [TOOL.MULTI_SELECT]: "Multi-select",
       [TOOL.GROUP]: "Group",
+      [TOOL.UNGROUP]: "Ungroup",
+      [TOOL.COPY]: "Copy",
       [TOOL.BRUSH]: "Brush",
       [TOOL.ERASER]: "Eraser",
       [TOOL.LINE]: "Line",
@@ -744,19 +775,27 @@
 
     const SHAPES = ["circle", "square", "rectangle", "triangle", "hexagon"];
     const COLOUR_SWATCHES = [
-      "#000000", "#404040", "#808080", "#bfbfbf", "#ffffff",
-      "#7f1d1d", "#b91c1c", "#ef4444", "#f87171", "#fecaca",
-      "#7c2d12", "#c2410c", "#f97316", "#fb923c", "#fed7aa",
-      "#78350f", "#d97706", "#f59e0b", "#fbbf24", "#fde68a",
-      "#365314", "#65a30d", "#84cc16", "#a3e635", "#d9f99d",
-      "#14532d", "#16a34a", "#22c55e", "#4ade80", "#bbf7d0",
-      "#1e3a8a", "#2563eb", "#3b82f6", "#60a5fa", "#bfdbfe",
+      { value: null, label: "No colour", noColour: true },
+      { value: "#bfbfbf" }, { value: "#808080" }, { value: "#404040" }, { value: "#000000" },
+      { value: "#fecaca" }, { value: "#f87171" }, { value: "#ef4444" }, { value: "#b91c1c" }, { value: "#7f1d1d" },
+      { value: "#fed7aa" }, { value: "#fb923c" }, { value: "#f97316" }, { value: "#c2410c" }, { value: "#7c2d12" },
+      { value: "#fde68a" }, { value: "#fbbf24" }, { value: "#f59e0b" }, { value: "#d97706" }, { value: "#78350f" },
+      { value: "#d9f99d" }, { value: "#a3e635" }, { value: "#84cc16" }, { value: "#65a30d" }, { value: "#365314" },
+      { value: "#bbf7d0" }, { value: "#4ade80" }, { value: "#22c55e" }, { value: "#16a34a" }, { value: "#14532d" },
+      { value: "#bfdbfe" }, { value: "#60a5fa" }, { value: "#3b82f6" }, { value: "#2563eb" }, { value: "#1e3a8a" },
     ];
 
     function clamp(value, min, max) { return Math.max(min, Math.min(max, value)); }
     function clone(value) { return JSON.parse(JSON.stringify(value)); }
+    function hasOwn(object, key) { return Object.prototype.hasOwnProperty.call(object, key); }
     function makeId(prefix = "item") { return `${prefix}_${Math.random().toString(36).slice(2, 10)}_${Date.now().toString(36)}`; }
     function distance(a, b) { return Math.hypot(b.x - a.x, b.y - a.y); }
+    function interpolatePoint(a, b, t) {
+      return {
+        x: a.x + (b.x - a.x) * t,
+        y: a.y + (b.y - a.y) * t,
+      };
+    }
     function rectFromPoints(a, b) { return { x: Math.min(a.x, b.x), y: Math.min(a.y, b.y), w: Math.abs(b.x - a.x), h: Math.abs(b.y - a.y) }; }
     function canvasPointFromEvent(event, canvas) {
       const rect = canvas.getBoundingClientRect();
@@ -785,6 +824,10 @@
       const filtered = values.filter((value) => value !== undefined && value !== null);
       if (!filtered.length) return undefined;
       return filtered.every((value) => value === filtered[0]) ? filtered[0] : undefined;
+    }
+    function commonExactValue(values) {
+      if (!values.length) return undefined;
+      return values.every((value) => value === values[0]) ? values[0] : undefined;
     }
     function titleCase(text) { return text.charAt(0).toUpperCase() + text.slice(1); }
 
@@ -892,26 +935,37 @@
       next.textRuns = normalizeTextRuns(next.text, next.textRuns, next.fontStyle);
       if (typeof next.align !== "string") next.align = "left";
       if (typeof next.boxed !== "boolean") next.boxed = false;
-      next.boxFillColor = next.boxFillColor || "#ffffff";
-      next.boxStrokeColor = next.boxStrokeColor || "#000000";
+      if (next.boxFillColor === undefined) next.boxFillColor = "#ffffff";
+      if (next.boxStrokeColor === undefined) next.boxStrokeColor = "#000000";
       if (typeof next.boxStroke !== "number") next.boxStroke = 2;
       if (typeof next.width !== "number") next.width = 180;
       if (typeof next.height !== "number") next.height = 70;
       return ensureTextBoxFitsContent(next);
     }
 
+    function getActiveShapeColourTarget() {
+      return state.shapeColourTarget === "stroke" ? "stroke" : "fill";
+    }
+
+    function getShapeColourProperty(type) {
+      if (type === "text") return getActiveShapeColourTarget() === "stroke" ? "boxStrokeColor" : "boxFillColor";
+      return getActiveShapeColourTarget() === "stroke" ? "strokeColor" : "fillColor";
+    }
+
+    function getActiveTargetColourFromValues(values) {
+      return getActiveShapeColourTarget() === "stroke" ? values.strokeColour : values.fillColour;
+    }
+
     function applyShapeColourPatchToShape(patchColour) {
-      const patch = {};
-      if (state.shapeColourTargets.fill) patch.fillColor = patchColour;
-      if (state.shapeColourTargets.stroke) patch.strokeColor = patchColour;
-      return patch;
+      return getActiveShapeColourTarget() === "stroke"
+        ? { strokeColor: patchColour }
+        : { fillColor: patchColour };
     }
 
     function applyShapeColourPatchToTextBox(patchColour) {
-      const patch = {};
-      if (state.shapeColourTargets.fill) patch.boxFillColor = patchColour;
-      if (state.shapeColourTargets.stroke) patch.boxStrokeColor = patchColour;
-      return patch;
+      return getActiveShapeColourTarget() === "stroke"
+        ? { boxStrokeColor: patchColour }
+        : { boxFillColor: patchColour };
     }
 
     function setSharedColour(colour) {
@@ -925,6 +979,7 @@
     function syncToolPreferenceColour(tool, colour) {
       if (!tool || !colour || tool === TOOL.BACKGROUND) return;
       if (tool === TOOL.SHAPE) {
+        if (state.toolPrefs[TOOL.SHAPE][getShapeColourProperty("shape")] === null) return;
         const patch = applyShapeColourPatchToShape(colour);
         if (Object.keys(patch).length) updateToolPreference(TOOL.SHAPE, patch);
         return;
@@ -932,8 +987,10 @@
       if (tool === TOOL.TEXT) {
         updateToolPreference(TOOL.TEXT, { color: colour });
         if (state.toolPrefs[TOOL.TEXT].boxed) {
-          const patch = applyShapeColourPatchToTextBox(colour);
-          if (Object.keys(patch).length) updateToolPreference(TOOL.TEXT, patch);
+          if (state.toolPrefs[TOOL.TEXT][getShapeColourProperty("text")] !== null) {
+            const patch = applyShapeColourPatchToTextBox(colour);
+            if (Object.keys(patch).length) updateToolPreference(TOOL.TEXT, patch);
+          }
         }
         return;
       }
@@ -958,11 +1015,10 @@
 
     function syncEditingTextColour(colour = state.sharedColour) {
       if (!state.editingText || !colour) return;
-      if (state.editingText.boxed && (state.shapeColourTargets.fill || state.shapeColourTargets.stroke)) {
+      if (state.editingText.boxed && state.editingText[getShapeColourProperty("text")] !== null) {
         const patch = applyShapeColourPatchToTextBox(colour);
         if (Object.keys(patch).length) {
           state.editingText = updateObjectAttributes({ type: "text", ...state.editingText }, patch);
-          return;
         }
       }
       state.editingText = updateObjectAttributes({ type: "text", ...state.editingText }, { color: colour });
@@ -991,7 +1047,7 @@
 
     function applyTargetedColourPatch(object, patchColour) {
       if (object.type === "shape") return applyShapeColourPatchToShape(patchColour);
-      if (object.type === "text" && object.boxed && (state.shapeColourTargets.fill || state.shapeColourTargets.stroke)) {
+      if (object.type === "text" && object.boxed) {
         return applyShapeColourPatchToTextBox(patchColour);
       }
       return { color: patchColour };
@@ -1001,14 +1057,14 @@
       if (selection.length) {
         if (selection.every((object) => object.type === "shape")) {
           return {
-            fillColour: commonValue(selection.map((object) => object.fillColor)) ?? selection[0].fillColor,
-            strokeColour: commonValue(selection.map((object) => object.strokeColor)) ?? selection[0].strokeColor,
+            fillColour: commonExactValue(selection.map((object) => object.fillColor)) ?? selection[0].fillColor,
+            strokeColour: commonExactValue(selection.map((object) => object.strokeColor)) ?? selection[0].strokeColor,
           };
         }
         if (selection.every((object) => object.type === "text" && object.boxed)) {
           return {
-            fillColour: commonValue(selection.map((object) => object.boxFillColor)) ?? selection[0].boxFillColor,
-            strokeColour: commonValue(selection.map((object) => object.boxStrokeColor)) ?? selection[0].boxStrokeColor,
+            fillColour: commonExactValue(selection.map((object) => object.boxFillColor)) ?? selection[0].boxFillColor,
+            strokeColour: commonExactValue(selection.map((object) => object.boxStrokeColor)) ?? selection[0].boxStrokeColor,
           };
         }
       }
@@ -1048,16 +1104,17 @@
       textEditor.style.lineHeight = `${Math.max(1, (nextText.size || 16) * 1.25) * scale}px`;
       textEditor.style.fontStyle = nextText.fontStyle === "italic" ? "italic" : "normal";
       textEditor.style.fontWeight = nextText.fontStyle === "bold" ? "700" : "400";
-      textEditor.style.background = nextText.boxed ? nextText.boxFillColor : "rgba(255,255,255,.96)";
-      textEditor.style.borderColor = nextText.boxed ? nextText.boxStrokeColor : "#111111";
-      textEditor.style.borderWidth = nextText.boxed ? `${Math.max(1, nextText.boxStroke * scale)}px` : "1px";
-      textEditor.style.borderStyle = "solid";
+      textEditor.style.background = nextText.boxed ? (nextText.boxFillColor ?? "transparent") : "rgba(255,255,255,.96)";
+      const hasBoxStroke = nextText.boxed && nextText.boxStrokeColor !== null && (nextText.boxStroke || 0) > 0;
+      textEditor.style.borderColor = nextText.boxed ? (nextText.boxStrokeColor ?? "transparent") : "#111111";
+      textEditor.style.borderWidth = hasBoxStroke ? `${Math.max(1, nextText.boxStroke * scale)}px` : (nextText.boxed ? "0px" : "1px");
+      textEditor.style.borderStyle = hasBoxStroke || !nextText.boxed ? "solid" : "none";
     }
 
     function normalizeShapeObject(object) {
       const next = clone(object);
-      next.fillColor = next.fillColor || next.color || "#000000";
-      next.strokeColor = next.strokeColor || next.color || "#000000";
+      if (next.fillColor === undefined) next.fillColor = next.color ?? "#000000";
+      if (next.strokeColor === undefined) next.strokeColor = next.color ?? "#000000";
       if (typeof next.stroke !== "number") next.stroke = 3;
       return next;
     }
@@ -1122,29 +1179,66 @@
       ctx.restore();
     }
 
-    function findBrushArrowAnchor(points, fromStart) {
+    function getPolylineLength(points) {
+      let total = 0;
+      for (let i = 0; i < points.length - 1; i += 1) total += distance(points[i], points[i + 1]);
+      return total;
+    }
+
+    function pointAlongPolyline(points, distanceFromStart) {
       if (!points.length) return null;
-      const tip = fromStart ? points[0] : points[points.length - 1];
-      const indexes = fromStart
-        ? [...Array(points.length).keys()].slice(1)
-        : [...Array(points.length).keys()].slice(0, -1).reverse();
-      for (const index of indexes) {
-        if (distance(points[index], tip) > 0.5) return points[index];
+      if (points.length === 1) return points[0];
+      const total = getPolylineLength(points);
+      const target = clamp(distanceFromStart, 0, total);
+      let travelled = 0;
+      for (let i = 0; i < points.length - 1; i += 1) {
+        const start = points[i];
+        const end = points[i + 1];
+        const segmentLength = distance(start, end);
+        if (segmentLength <= 0) continue;
+        if (travelled + segmentLength >= target) {
+          return interpolatePoint(start, end, (target - travelled) / segmentLength);
+        }
+        travelled += segmentLength;
       }
-      return null;
+      return points[points.length - 1];
+    }
+
+    function trimPolyline(points, startTrim = 0, endTrim = 0) {
+      if (points.length <= 1) return [...points];
+      const total = getPolylineLength(points);
+      if (total <= 0) return [points[0]];
+      const trimmedStart = clamp(startTrim, 0, total);
+      const trimmedEnd = clamp(endTrim, 0, Math.max(0, total - trimmedStart));
+      const endDistance = total - trimmedEnd;
+      if (endDistance <= trimmedStart + 0.5) return [];
+
+      const trimmed = [pointAlongPolyline(points, trimmedStart)];
+      let travelled = 0;
+      for (let i = 1; i < points.length - 1; i += 1) {
+        travelled += distance(points[i - 1], points[i]);
+        if (travelled > trimmedStart && travelled < endDistance) trimmed.push(points[i]);
+      }
+      const endPoint = pointAlongPolyline(points, endDistance);
+      if (!trimmed.length || distance(trimmed[trimmed.length - 1], endPoint) > 0.5) trimmed.push(endPoint);
+      return trimmed;
     }
 
     function drawBrush(ctx, object, backgroundColor = state.scene.backgroundColor) {
       const points = object.points || [];
       if (!points.length) return;
       const drawColor = object.type === "eraser" ? backgroundColor : object.color;
-      if (points.length === 1) {
-        drawStamp(ctx, points[0], object.size, object.shape, drawColor, object.alpha);
+      const headLength = getArrowHeadLength(object.size);
+      const bodyPoints = object.type === "brush"
+        ? trimPolyline(points, object.startHead ? headLength : 0, object.endHead ? headLength : 0)
+        : [...points];
+      if (bodyPoints.length === 1) {
+        drawStamp(ctx, bodyPoints[0], object.size, object.shape, drawColor, object.alpha);
       } else {
         const spacing = Math.max(1, object.size * 0.18);
-        for (let i = 0; i < points.length - 1; i += 1) {
-          const start = points[i];
-          const end = points[i + 1];
+        for (let i = 0; i < bodyPoints.length - 1; i += 1) {
+          const start = bodyPoints[i];
+          const end = bodyPoints[i + 1];
           const steps = Math.max(1, Math.ceil(distance(start, end) / spacing));
           for (let s = 0; s <= steps; s += 1) {
             const t = s / steps;
@@ -1154,8 +1248,9 @@
       }
 
       if (object.type === "brush" && points.length >= 2) {
-        const startAnchor = findBrushArrowAnchor(points, true);
-        const endAnchor = findBrushArrowAnchor(points, false);
+        const totalLength = getPolylineLength(points);
+        const startAnchor = object.startHead ? pointAlongPolyline(points, Math.min(headLength, totalLength)) : null;
+        const endAnchor = object.endHead ? pointAlongPolyline(points, Math.max(0, totalLength - headLength)) : null;
         if (object.startHead && startAnchor) drawArrowHead(ctx, startAnchor, points[0], object.size, drawColor, object.alpha);
         if (object.endHead && endAnchor) drawArrowHead(ctx, endAnchor, points[points.length - 1], object.size, drawColor, object.alpha);
       }
@@ -1254,9 +1349,11 @@
       ctx.save();
       ctx.globalAlpha = getAlpha01(object.alpha);
       if (object.boxed) {
-        ctx.fillStyle = object.boxFillColor;
-        ctx.fillRect(object.x, object.y, w, h);
-        if ((object.boxStroke || 0) > 0) {
+        if (object.boxFillColor !== null) {
+          ctx.fillStyle = object.boxFillColor;
+          ctx.fillRect(object.x, object.y, w, h);
+        }
+        if ((object.boxStroke || 0) > 0 && object.boxStrokeColor !== null) {
           ctx.strokeStyle = object.boxStrokeColor;
           ctx.lineWidth = object.boxStroke;
           ctx.strokeRect(object.x, object.y, w, h);
@@ -1363,15 +1460,15 @@
       let next = normalizeObject(clone(object));
       if (next.type === "brush" || next.type === "eraser") {
         if (typeof patch.size === "number") next.size = patch.size;
-        if (patch.shape && next.type === "eraser") next.shape = patch.shape;
-        if (patch.color && next.type === "brush") next.color = patch.color;
+        if (hasOwn(patch, "shape") && next.type === "eraser") next.shape = patch.shape;
+        if (hasOwn(patch, "color") && next.type === "brush") next.color = patch.color;
         if (typeof patch.alpha === "number") next.alpha = patch.alpha;
         if (typeof patch.startHead === "boolean" && next.type === "brush") next.startHead = patch.startHead;
         if (typeof patch.endHead === "boolean" && next.type === "brush") next.endHead = patch.endHead;
         if (next.type === "brush") next.shape = "circle";
       } else if (next.type === "line" || next.type === "arrow") {
         if (typeof patch.size === "number") next.size = patch.size;
-        if (patch.color) next.color = patch.color;
+        if (hasOwn(patch, "color")) next.color = patch.color;
         if (typeof patch.alpha === "number") next.alpha = patch.alpha;
         if (typeof patch.startHead === "boolean") next.startHead = patch.startHead;
         if (typeof patch.endHead === "boolean") next.endHead = patch.endHead;
@@ -1384,28 +1481,28 @@
           next.x = cx - next.w / 2;
           next.y = cy - next.h / 2;
         }
-        if (patch.shape) {
+        if (hasOwn(patch, "shape")) {
           next.shape = patch.shape;
           const adjusted = enforceShapeGeometry(next);
           next.w = adjusted.w;
           next.h = adjusted.h;
         }
-        if (patch.fillColor) next.fillColor = patch.fillColor;
-        if (patch.strokeColor) next.strokeColor = patch.strokeColor;
+        if (hasOwn(patch, "fillColor")) next.fillColor = patch.fillColor;
+        if (hasOwn(patch, "strokeColor")) next.strokeColor = patch.strokeColor;
         if (typeof patch.alpha === "number") next.alpha = patch.alpha;
         if (typeof patch.stroke === "number") next.stroke = patch.stroke;
       } else if (next.type === "text") {
         if (typeof patch.size === "number") next.size = patch.size;
-        if (patch.color) next.color = patch.color;
+        if (hasOwn(patch, "color")) next.color = patch.color;
         if (typeof patch.alpha === "number") next.alpha = patch.alpha;
-        if (patch.fontStyle) {
+        if (hasOwn(patch, "fontStyle")) {
           next.fontStyle = normalizeFontStyle(patch.fontStyle);
           next.textRuns = normalizeTextRuns(next.text, [{ text: next.text, fontStyle: next.fontStyle }], next.fontStyle);
         }
-        if (patch.align) next.align = patch.align;
+        if (hasOwn(patch, "align")) next.align = patch.align;
         if (typeof patch.boxed === "boolean") next.boxed = patch.boxed;
-        if (patch.boxFillColor) next.boxFillColor = patch.boxFillColor;
-        if (patch.boxStrokeColor) next.boxStrokeColor = patch.boxStrokeColor;
+        if (hasOwn(patch, "boxFillColor")) next.boxFillColor = patch.boxFillColor;
+        if (hasOwn(patch, "boxStrokeColor")) next.boxStrokeColor = patch.boxStrokeColor;
         if (typeof patch.stroke === "number") next.boxStroke = patch.stroke;
         if (typeof patch.boxStroke === "number") next.boxStroke = patch.boxStroke;
         if (typeof patch.width === "number") next.width = patch.width;
@@ -1434,16 +1531,46 @@
       return titleCase(object.type);
     }
 
-    function getElementMetaList(scene) {
+    function getGroupMetaList(scene) {
+      const groupsById = {};
+      const groups = [];
+      let groupCount = 0;
+      scene.objects.forEach((object, index) => {
+        if (!object.groupId) return;
+        if (!groupsById[object.groupId]) {
+          groupCount += 1;
+          const meta = {
+            kind: "group",
+            groupId: object.groupId,
+            timeIndex: index,
+            label: `Group${groupCount}`,
+            baseLabel: "Group",
+            memberIds: [],
+          };
+          groupsById[object.groupId] = meta;
+          groups.push(meta);
+        }
+        groupsById[object.groupId].memberIds.push(object.id);
+      });
+      const groupLabelById = {};
+      groups.forEach((group) => {
+        groupLabelById[group.groupId] = group.label;
+      });
+      return { groups, groupLabelById };
+    }
+
+    function getElementMetaList(scene, groupLabelById = {}) {
       const counts = {};
       return scene.objects.map((object, index) => {
         const base = getBaseElementLabel(object);
         counts[base] = (counts[base] || 0) + 1;
         return {
+          kind: "element",
           object,
           timeIndex: index,
           label: `${base}${counts[base]}`,
           baseLabel: base,
+          groupLabel: object.groupId ? groupLabelById[object.groupId] || null : null,
         };
       });
     }
@@ -1477,8 +1604,8 @@
       lastClipboardSource: null,
       clipboardPasteCount: 0,
       logGroupOpen: {},
-      panels: { open: null, elementSort: "time" },
-      shapeColourTargets: { fill: true, stroke: false },
+      panels: { open: null, elementSort: "time", elementFilter: "all" },
+      shapeColourTarget: "fill",
       sharedColour: "#000000",
       lineMenu: { visible: false, targetId: null, x: 0, y: 0 },
       toolPrefs: {
@@ -1500,6 +1627,22 @@
       },
       imageCache: {},
     };
+
+    function normalizeSceneGroups(scene) {
+      const counts = {};
+      scene.objects.forEach((object) => {
+        if (!object.groupId) return;
+        counts[object.groupId] = (counts[object.groupId] || 0) + 1;
+      });
+      const nextScene = clone(scene);
+      nextScene.objects = nextScene.objects.map((object) => {
+        if (!object.groupId || (counts[object.groupId] || 0) >= 2) return object;
+        const nextObject = { ...object };
+        delete nextObject.groupId;
+        return nextObject;
+      });
+      return nextScene;
+    }
 
     const $ = (id) => document.getElementById(id);
     const canvas = $("canvas");
@@ -1722,7 +1865,7 @@
     }
 
     function pushHistory(scene, actionMeta = {}) {
-      const cloned = clone(scene);
+      const cloned = normalizeSceneGroups(scene);
       state.history = state.history.slice(0, state.historyIndex + 1);
       state.historyActions = state.historyActions.slice(0, state.historyIndex + 1);
       state.history.push(cloned);
@@ -1738,6 +1881,7 @@
     }
 
     function initHistory() {
+      state.scene = normalizeSceneGroups(state.scene);
       state.history = [clone(state.scene)];
       state.historyIndex = 0;
       state.historyActions = [{ stateIndex: 0, label: "Initial state", detail: "", groupKey: null }];
@@ -1870,15 +2014,19 @@
     function renderTools() {
       const grid = $("toolsGrid");
       grid.innerHTML = "";
+      const canUngroup = selectedObjects().some((object) => !!object.groupId);
       for (const tool of TOOL_ORDER) {
         const btn = document.createElement("button");
         btn.className = "tool-btn";
         const active =
           (tool === TOOL.SELECT && state.selectMode && !state.multiSelectMode) ||
           (tool === TOOL.MULTI_SELECT && state.selectMode && state.multiSelectMode) ||
-          (tool !== TOOL.SELECT && tool !== TOOL.MULTI_SELECT && tool !== TOOL.GROUP && state.activeTool === tool);
+          (tool !== TOOL.SELECT && tool !== TOOL.MULTI_SELECT && tool !== TOOL.GROUP && tool !== TOOL.UNGROUP && tool !== TOOL.COPY && state.activeTool === tool);
         if (active) btn.classList.add("active");
         btn.textContent = TOOL_LABEL[tool];
+        if (tool === TOOL.GROUP) btn.disabled = state.selectedIds.length < 2;
+        if (tool === TOOL.UNGROUP) btn.disabled = !canUngroup;
+        if (tool === TOOL.COPY) btn.disabled = !state.selectedIds.length;
         btn.addEventListener("click", () => toggleTool(tool));
         grid.appendChild(btn);
       }
@@ -1915,13 +2063,8 @@
         const nonTargeted = selection.filter((object) => !objectUsesColourTargets(object));
         const targeted = selection.filter((object) => objectUsesColourTargets(object));
         if (nonTargeted.length && !targeted.length) return commonValue(nonTargeted.map((object) => object.color)) ?? nonTargeted[0].color;
-        if (targeted.length && !nonTargeted.length && (state.shapeColourTargets.fill || state.shapeColourTargets.stroke)) {
-          const targetColours = currentColourTargetValues(targeted);
-          const selectedColours = [];
-          if (state.shapeColourTargets.fill) selectedColours.push(targetColours.fillColour);
-          if (state.shapeColourTargets.stroke) selectedColours.push(targetColours.strokeColour);
-          if (!selectedColours.length) return undefined;
-          return selectedColours.every((value) => value === selectedColours[0]) ? selectedColours[0] : undefined;
+        if (targeted.length && !nonTargeted.length) {
+          return getActiveTargetColourFromValues(currentColourTargetValues(targeted));
         }
         if (selection.every((object) => object.type === "text")) {
           return commonValue(selection.map((object) => object.color)) ?? selection[0].color;
@@ -1929,36 +2072,47 @@
         return undefined;
       }
       if (state.activeTool === TOOL.BACKGROUND) return state.scene.backgroundColor;
-      if ((state.activeTool === TOOL.SHAPE) || (state.activeTool === TOOL.TEXT && state.toolPrefs[TOOL.TEXT].boxed && (state.shapeColourTargets.fill || state.shapeColourTargets.stroke))) {
-        const targetColours = currentColourTargetValues([]);
-        const colours = [];
-        if (state.shapeColourTargets.fill) colours.push(targetColours.fillColour);
-        if (state.shapeColourTargets.stroke) colours.push(targetColours.strokeColour);
-        return colours.length === 1 || colours.every((value) => value === colours[0]) ? colours[0] : undefined;
+      if (state.activeTool === TOOL.SHAPE || (state.activeTool === TOOL.TEXT && state.toolPrefs[TOOL.TEXT].boxed)) {
+        return getActiveTargetColourFromValues(currentColourTargetValues([]));
       }
       return activePrefs().color;
+    }
+
+    function setColourPreview(node, colour) {
+      node.classList.toggle("no-colour", colour === null);
+      node.style.background = colour ?? "#ffffff";
     }
 
     function renderColours() {
       const grid = $("colourGrid");
       grid.innerHTML = "";
       const currentColour = resolveCurrentSwatchColour();
+      const selection = selectedObjects();
+      const supportsNoColour = selection.length
+        ? selection.every((object) => objectUsesColourTargets(object))
+        : state.activeTool === TOOL.SHAPE || (state.activeTool === TOOL.TEXT && state.toolPrefs[TOOL.TEXT].boxed);
       for (const swatch of COLOUR_SWATCHES) {
         const btn = document.createElement("button");
         btn.className = "swatch";
-        if (currentColour === swatch) btn.classList.add("active");
-        btn.style.background = swatch;
-        btn.addEventListener("click", () => applyAttributesPatch({ color: swatch }, { label: "Change colour", groupKey: "attr-colour" }));
+        if (currentColour === swatch.value) btn.classList.add("active");
+        if (swatch.noColour) {
+          btn.classList.add("no-colour");
+          btn.title = swatch.label;
+          btn.disabled = !supportsNoColour;
+        } else {
+          btn.style.background = swatch.value;
+        }
+        btn.addEventListener("click", () => applyAttributesPatch({ color: swatch.value }, { label: "Change colour", groupKey: "attr-colour" }));
         grid.appendChild(btn);
       }
     }
 
     function renderShapeColourTargets() {
       const targets = currentShapeTargetColours();
-      $("fillTargetInput").checked = !!state.shapeColourTargets.fill;
-      $("strokeTargetInput").checked = !!state.shapeColourTargets.stroke;
-      $("fillPreview").style.background = targets.fillColour || "#000000";
-      $("strokePreview").style.background = targets.strokeColour || "#000000";
+      $("fillTargetBtn").classList.toggle("active", getActiveShapeColourTarget() === "fill");
+      $("strokeTargetBtn").classList.toggle("active", getActiveShapeColourTarget() === "stroke");
+      setColourPreview($("fillPreview"), targets.fillColour);
+      setColourPreview($("strokePreview"), targets.strokeColour);
     }
 
     function renderOptionGrid(gridId, options, currentValue, onSelect) {
@@ -2148,9 +2302,9 @@
         const main = document.createElement("div");
         main.className = "row-main";
         const last = group.entries[group.entries.length - 1];
-        main.innerHTML = `
+          main.innerHTML = `
           <span class="pill neutral">${group.entries.length} actions</span>
-          <div class="row-main-text">
+            <div class="row-main-text">
             <div class="row-title">${last.label}</div>
             <div class="row-subtitle">States ${group.entries[0].stateIndex}–${last.stateIndex}</div>
           </div>
@@ -2269,6 +2423,15 @@
       toolBtn.textContent = "Sort: tool";
       toolBtn.addEventListener("click", () => { state.panels.elementSort = "tool"; renderSidePanel(); });
 
+      const groupsBtn = document.createElement("button");
+      groupsBtn.className = `mini-btn ${state.panels.elementFilter === "groups" ? "active" : ""}`;
+      groupsBtn.type = "button";
+      groupsBtn.textContent = "Groups only";
+      groupsBtn.addEventListener("click", () => {
+        state.panels.elementFilter = state.panels.elementFilter === "groups" ? "all" : "groups";
+        renderSidePanel();
+      });
+
       const copyBtn = document.createElement("button");
       copyBtn.className = "mini-btn";
       copyBtn.type = "button";
@@ -2283,32 +2446,62 @@
       pasteBtn.disabled = !state.elementClipboard?.length;
       pasteBtn.addEventListener("click", pasteClipboardElements);
 
-      toolbar.append(timeBtn, toolBtn, copyBtn, pasteBtn);
+      toolbar.append(timeBtn, toolBtn, groupsBtn, copyBtn, pasteBtn);
       sidePanelBody.appendChild(toolbar);
 
       const list = document.createElement("div");
       list.className = "list";
-      const metaList = sortElementMetaList(getElementMetaList(state.scene));
-      metaList.forEach((meta) => {
+      const { groups, groupLabelById } = getGroupMetaList(state.scene);
+      const entries = state.panels.elementFilter === "groups"
+        ? sortElementMetaList(groups)
+        : sortElementMetaList([...groups, ...getElementMetaList(state.scene, groupLabelById)]);
+      if (!entries.length) {
+        const note = document.createElement("div");
+        note.className = "muted-note";
+        note.textContent = state.panels.elementFilter === "groups" ? "No groups yet." : "No elements yet.";
+        sidePanelBody.appendChild(note);
+        return;
+      }
+      entries.forEach((entry) => {
+        const rowIds = entry.kind === "group" ? entry.memberIds : [entry.object.id];
         const row = document.createElement("div");
         row.className = "list-row";
-        if (state.selectedIds.includes(meta.object.id)) row.classList.add("selected");
+        if (rowIds.length && rowIds.every((id) => state.selectedIds.includes(id))) row.classList.add("selected");
 
         const main = document.createElement("div");
         main.className = "row-main";
-        const subtitleParts = [`${meta.baseLabel}`, `#${meta.timeIndex + 1}`];
-        if (meta.object.groupId) subtitleParts.push("grouped");
-        const detail = describeElement(meta.object);
-        if (detail) subtitleParts.push(detail);
-        main.innerHTML = `
-          ${meta.object.groupId ? '<span class="pill">Group</span>' : ''}
+        if (entry.kind === "group") {
+          const countLabel = `${entry.memberIds.length} ${entry.memberIds.length === 1 ? "element" : "elements"}`;
+          main.innerHTML = `
+            <span class="pill neutral">${countLabel}</span>
+            <div class="row-main-text">
+              <div class="row-title">${entry.label}</div>
+              <div class="row-subtitle">Group</div>
+            </div>
+          `;
+        } else {
+          const subtitleParts = [`${entry.baseLabel}`, `#${entry.timeIndex + 1}`];
+          if (entry.groupLabel) subtitleParts.push(`member of ${entry.groupLabel}`);
+          const detail = describeElement(entry.object);
+          if (detail) subtitleParts.push(detail);
+          main.innerHTML = `
+            ${entry.groupLabel ? `<span class="pill">${entry.groupLabel}</span>` : ""}
+            <div class="row-main-text">
+              <div class="row-title">${entry.label}</div>
+              <div class="row-subtitle">${subtitleParts.join(" · ")}</div>
+            </div>
+          `;
+        }
+        /* main.innerHTML = `
+            ${entry.groupLabel ? `<span class="pill">${entry.groupLabel}</span>` : ""}
           <div class="row-main-text">
-            <div class="row-title">${meta.label}</div>
+              <div class="row-title">${entry.label}</div>
             <div class="row-subtitle">${subtitleParts.join(" · ")}</div>
           </div>
         `;
+        */
         main.addEventListener("click", (event) => {
-          handleElementRowSelection(getSelectableIdsForObject(meta.object), event.ctrlKey || event.metaKey || state.multiSelectMode);
+          handleElementRowSelection(rowIds, event.ctrlKey || event.metaKey || state.multiSelectMode);
         });
 
         const copyOne = document.createElement("button");
@@ -2317,7 +2510,7 @@
         copyOne.textContent = "Copy";
         copyOne.addEventListener("click", (event) => {
           event.stopPropagation();
-          copyElementsByIds(getSelectableIdsForObject(meta.object));
+          copyElementsByIds(rowIds);
         });
 
         row.appendChild(main);
@@ -2364,7 +2557,7 @@
       if (patch.fontStyle && state.activeTool === TOOL.TEXT && state.editingText && applyEditingTextFontStyle(patch.fontStyle)) {
         return;
       }
-      if (patch.color && (selection.length || state.activeTool !== TOOL.BACKGROUND)) {
+      if (hasOwn(patch, "color") && patch.color !== null && (selection.length || state.activeTool !== TOOL.BACKGROUND)) {
         rememberExplicitColourChoice(patch.color, selection);
       }
       if (selection.length) {
@@ -2372,14 +2565,14 @@
         const idSet = new Set(state.selectedIds);
         nextScene.objects = nextScene.objects.map((object) => {
           if (!idSet.has(object.id)) return object;
-          if (patch.color) return updateObjectAttributes(object, applyTargetedColourPatch(object, patch.color));
+          if (hasOwn(patch, "color")) return updateObjectAttributes(object, applyTargetedColourPatch(object, patch.color));
           return updateObjectAttributes(object, patch);
         });
         pushHistory(nextScene, actionMeta);
         return;
       }
 
-      if (state.activeTool === TOOL.BACKGROUND && patch.color) {
+      if (state.activeTool === TOOL.BACKGROUND && hasOwn(patch, "color") && patch.color !== null) {
         const nextScene = clone(state.scene);
         nextScene.backgroundColor = patch.color;
         updateToolPreference(TOOL.BACKGROUND, { color: patch.color });
@@ -2387,13 +2580,13 @@
         return;
       }
 
-      if (state.activeTool === TOOL.SHAPE && patch.color) {
+      if (state.activeTool === TOOL.SHAPE && hasOwn(patch, "color")) {
         updateToolPreference(TOOL.SHAPE, applyShapeColourPatchToShape(patch.color));
         renderAll();
         return;
       }
 
-      if (state.activeTool === TOOL.TEXT && patch.color && state.toolPrefs[TOOL.TEXT].boxed && (state.shapeColourTargets.fill || state.shapeColourTargets.stroke)) {
+      if (state.activeTool === TOOL.TEXT && hasOwn(patch, "color") && state.toolPrefs[TOOL.TEXT].boxed) {
         updateToolPreference(TOOL.TEXT, applyShapeColourPatchToTextBox(patch.color));
         if (state.editingText) state.editingText = updateObjectAttributes({ type: "text", ...state.editingText }, applyShapeColourPatchToTextBox(patch.color));
         renderAll();
@@ -2464,6 +2657,16 @@
 
       if (tool === TOOL.GROUP) {
         groupSelection();
+        return;
+      }
+
+      if (tool === TOOL.UNGROUP) {
+        ungroupSelection();
+        return;
+      }
+
+      if (tool === TOOL.COPY) {
+        copySelectedElements();
         return;
       }
 
@@ -2705,6 +2908,24 @@
       const selectedSet = new Set(state.selectedIds);
       nextScene.objects = nextScene.objects.map((object) => selectedSet.has(object.id) ? { ...object, groupId } : object);
       pushHistory(nextScene, { label: "Group elements" });
+      setSelection([...state.selectedIds]);
+      renderAll();
+    }
+
+    function ungroupSelection() {
+      if (!state.selectedIds.length) return;
+      const selectedSet = new Set(state.selectedIds);
+      const nextScene = clone(state.scene);
+      let changed = false;
+      nextScene.objects = nextScene.objects.map((object) => {
+        if (!selectedSet.has(object.id) || !object.groupId) return object;
+        changed = true;
+        const nextObject = { ...object };
+        delete nextObject.groupId;
+        return nextObject;
+      });
+      if (!changed) return;
+      pushHistory(nextScene, { label: "Ungroup elements" });
       renderAll();
     }
 
@@ -2800,6 +3021,16 @@
         longPressTimer: null,
       };
       canvas.setPointerCapture?.(event.pointerId);
+      renderAll();
+    }
+
+    function onCanvasDoubleClick(event) {
+      if (!state.selectMode) return;
+      const screenPoint = canvasPointFromEvent(event, canvas);
+      const worldPoint = screenToWorld(screenPoint);
+      const hit = [...state.scene.objects].reverse().find((object) => hitTestObject(object, worldPoint)) || null;
+      if (!hit) return;
+      setSelection([hit.id]);
       renderAll();
     }
 
@@ -3219,18 +3450,17 @@
     bindStepper("bgB", "bgBUp", "bgBDown", 0, 255, (value) => applyAttributesPatch({ color: rgbToHex(Number($("bgR").value), Number($("bgG").value), value) }, { label: "Change background colour", groupKey: "background-colour" }));
 
     $("alphaInput").addEventListener("input", (event) => applyAttributesPatch({ alpha: Number(event.target.value) }, { label: "Change alpha", groupKey: "attr-alpha" }));
-    $("fillTargetInput").addEventListener("change", (event) => {
-      state.shapeColourTargets.fill = event.target.checked;
-      applySharedColourToCurrentContext();
+    $("fillTargetBtn").addEventListener("click", () => {
+      state.shapeColourTarget = "fill";
       renderAll();
     });
-    $("strokeTargetInput").addEventListener("change", (event) => {
-      state.shapeColourTargets.stroke = event.target.checked;
-      applySharedColourToCurrentContext();
+    $("strokeTargetBtn").addEventListener("click", () => {
+      state.shapeColourTarget = "stroke";
       renderAll();
     });
 
     canvas.addEventListener("pointerdown", onPointerDown);
+    canvas.addEventListener("dblclick", onCanvasDoubleClick);
     canvas.addEventListener("pointermove", onPointerMove);
     canvas.addEventListener("pointerup", onPointerUp);
     canvas.addEventListener("pointerleave", onPointerUp);
